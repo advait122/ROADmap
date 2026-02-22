@@ -1,10 +1,15 @@
 # config.py
 
-# YouTube Data API key
-# IMPORTANT: Do NOT hardcode this key in logic files.
-# Keep it only here.
+import os
 
-YOUTUBE_API_KEY = "AIzaSyAFcOceiiYG05_Tl4kyoxcA_JdFaO0XRfY"
+# YouTube Data API key
+# Loaded from environment variable
+YOUTUBE_API_KEY = os.getenv("YOUTUBE_API_KEY")
+
+if not YOUTUBE_API_KEY:
+    raise RuntimeError(
+        "YOUTUBE_API_KEY not set. Please set it as an environment variable."
+    )
 
 # YouTube API service name and version
 YOUTUBE_API_SERVICE_NAME = "youtube"
