@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+{% block title %}Dashboard | Career Roadmap AI{% endblock %}
+{% block body_class %}dashboard-page{% endblock %}
+{% block page_styles %}
+<link href="/static/css/dashboard.css" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<section class="page-card p-4 p-md-5 mb-4">
+    <div class="d-flex flex-wrap justify-content-between gap-3">
+        <div>
+            <h2 class="h4 mb-1">Roadmap Dashboard</h2>
+            <p class="text-muted mb-0">{{ dashboard.goal.goal_text }}</p>
+            <p class="small text-muted mb-0">
+                Target Company: {{ dashboard.goal.target_company or "Not clear" }} |
+                Timeline End: {{ dashboard.goal.target_end_date }}
+            </p>
+        </div>
+        <div>
+            <a href="/onboarding" class="btn btn-outline-secondary btn-sm">Create New Goal</a>
+            <form method="post" action="/students/{{ student.id }}/roadmap/replan" class="d-inline ms-2">
+                <button type="submit" class="btn btn-outline-primary btn-sm">Replan Now</button>
+            </form>
+        </div>
+    </div>
+
+    {% if error %}
+        <div class="alert alert-danger mt-3 mb-0">{{ error }}</div>
+    {% endif %}
+    {% if dashboard.replan_info.applied %}
+        <div class="alert alert-warning mt-3 mb-0">
+            Roadmap auto-adjusted because {{ dashboard.replan_info.overdue_task_count }} task(s) were missed.
+            {{ dashboard.replan_info.updated_task_count }} task(s) were rescheduled.
+        </div>
+    {% endif %}
+</section>
+
+<section class="row g-4 mb-4">
+    <div class="col-lg-4">
+        <div class="page-card p-4 h-100">
+            <h3 class="h6 mb-3">Progress</h3>
+            <p class="mb-1">Task Completion: <strong>{{ "%.1f"|format(dashboard.progress.completion_percent) }}%</strong></p>
+            <p class="mb-0 text-muted">
+                {{ dashboard.progress.completed_tasks }}/{{ dashboard.progress.total_tasks }} tasks completed
+            </p>
+        </div>
+    </div>
+    <div class="col-lg-8">
+        <div class="page-card p-4 h-100">
+            <h3 class="h6 mb-3">Skill Gap</h3>
+            {% if dashboard.goal_skills %}
+                <div class="skills-list">
+                    {% for skill in dashboard.goal_skills %}
+                        <span class="skill-pill">
+                            {{ skill.skill_name }}
+                            {% if skill.status == "completed" %}
+                                (Done)
+                            {% elif skill.is_active %}
+                                (Current Skill)
+                            {% elif skill.ready_for_test %}
+                                (Test Ready)
+                            {% elif skill.is_locked %}
+                                (Locked)
+                            {% else %}
+                                ({{ skill.status.replace("_", " ") }})
+                            {% endif %}
+                        </span>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="alert alert-success mb-0">You currently meet all extracted requirements.</div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="page-card p-4 h-100">
+            <h3 class="h6 mb-3">Required Skills (LLM + Opportunity Data)</h3>
+            {% if dashboard.required_skills %}
+                <div class="skills-list">
+                    {% for skill in dashboard.required_skills %}
+                        <span class="skill-pill">{{ skill }}</span>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No required skills extracted.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="page-card p-4 h-100">
+            <h3 class="h6 mb-3">Your Current Skills</h3>
+            {% if dashboard.known_skills %}
+                <div class="skills-list">
+                    {% for skill in dashboard.known_skills %}
+                        <span class="skill-pill">{{ skill }}</span>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No profile skills found.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section id="tasks" class="page-card p-4 mb-4">
+    <h3 class="h5 mb-3">Today and Upcoming Tasks</h3>
+    {% if dashboard.active_skill and not dashboard.selected_playlist %}
+        <div class="alert alert-info">
+            Select one playlist for <strong>{{ dashboard.active_skill.skill_name }}</strong> first.
+            Task completion will unlock after selection.
+        </div>
+    {% endif %}
+    {% if dashboard.upcoming_tasks %}
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Task</th>
+                        <th>Details</th>
+                        <th>Skill</th>
+                        <th>Target Min</th>
+                        <th>Complete</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for task in dashboard.upcoming_tasks %}
+                    <tr>
+                        <td>{{ task.task_date }}</td>
+                        <td>{{ task.title }}</td>
+                        <td><small>{{ (task.description or "") | replace('\n', '<br>') | safe }}</small></td>
+                        <td>{{ task.skill_name or "-" }}</td>
+                        <td>{{ task.target_minutes }}</td>
+                        <td>
+                            <form method="post" action="/students/{{ student.id }}/tasks/{{ task.id }}/completion">
+                                <input type="hidden" name="is_completed" value="{% if task.is_completed == 1 %}0{% else %}1{% endif %}">
+                                <button type="submit" class="btn btn-sm {% if task.is_completed == 1 %}btn-success{% else %}btn-outline-primary{% endif %}">
+                                    {% if task.is_completed == 1 %}Done{% else %}Mark Done{% endif %}
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-muted mb-0">No tasks in current window.</p>
+    {% endif %}
+</section>
+
+<section class="row g-4 mb-4" id="playlist">
+    <div class="col-lg-6">
+        <div class="page-card p-4 h-100">
+            <h3 class="h6 mb-3">Skill Tests</h3>
+            {% set ready_items = dashboard.goal_skills | selectattr('ready_for_test') | list %}
+            {% if ready_items %}
+                <ul class="list-group">
+                    {% for item in ready_items %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <span>{{ item.skill_name }}</span>
+                            <a class="btn btn-sm btn-primary" href="/students/{{ student.id }}/skills/{{ item.id }}/test">Take Test</a>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted mb-0">Complete all tasks for a skill to unlock its test.</p>
+            {% endif %}
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="page-card p-4 h-100">
+            <h3 class="h6 mb-3">Current Skill Playlist Selection</h3>
+            {% if dashboard.active_skill %}
+                <p class="mb-2"><strong>Current skill:</strong> {{ dashboard.active_skill.skill_name }}</p>
+                {% if dashboard.selected_playlist %}
+                    <div class="alert alert-success py-2">
+                        Selected: <strong>{{ dashboard.selected_playlist.title }}</strong>
+                    </div>
+                {% endif %}
+
+                {% if dashboard.active_skill_recommendations %}
+                    <div class="d-flex flex-column gap-3">
+                        {% for item in dashboard.active_skill_recommendations %}
+                            <div class="border rounded p-3 {% if item.is_selected == 1 %}border-success{% endif %}">
+                                <div class="d-flex justify-content-between align-items-start gap-2">
+                                    <div>
+                                        <div class="fw-semibold">{{ item.title }}</div>
+                                        <div class="small text-muted">Channel: {{ item.channel_title }}</div>
+                                        {% if item.summary.channel_url %}
+                                            <a href="{{ item.summary.channel_url }}" target="_blank" rel="noreferrer">Open channel URL</a><br>
+                                        {% endif %}
+                                        <a href="{{ item.playlist_url }}" target="_blank" rel="noreferrer">Open playlist URL</a>
+                                    </div>
+                                    <form method="post" action="/students/{{ student.id }}/skills/{{ dashboard.active_skill.id }}/playlist/select">
+                                        <input type="hidden" name="recommendation_id" value="{{ item.id }}">
+                                        <button class="btn btn-sm {% if item.is_selected == 1 %}btn-success{% else %}btn-outline-primary{% endif %}" type="submit">
+                                            {% if item.is_selected == 1 %}Selected{% else %}Select{% endif %}
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <div class="small mt-3">
+                                    <div class="fw-semibold">Topic Overview</div>
+                                    <div>{{ item.summary.topic_overview or "Not available" }}</div>
+                                </div>
+                                <div class="small mt-2">
+                                    <div class="fw-semibold">Learning Experience</div>
+                                    <div>{{ item.summary.learning_experience or "Not available" }}</div>
+                                </div>
+                                <div class="small mt-2">
+                                    <div class="fw-semibold">Topics Covered</div>
+                                    <div>{{ item.summary.topics_covered_summary or "Not available" }}</div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {% if dashboard.playlist_recommendation_error %}
+                        <p class="text-muted mb-0">{{ dashboard.playlist_recommendation_error }}</p>
+                    {% else %}
+                        <p class="text-muted mb-0">No playlist suggestions available yet.</p>
+                    {% endif %}
+                {% endif %}
+            {% else %}
+                <div class="alert alert-success mb-0">All roadmap skills are completed.</div>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section id="chatbot" class="page-card p-4 mb-4">
+    <h3 class="h5 mb-3">Playlist Doubt Chatbot</h3>
+    {% if dashboard.chatbot.enabled %}
+        <p class="text-muted mb-3">
+            Active skill: <strong>{{ dashboard.chatbot.active_skill.skill_name }}</strong> |
+            Playlist: <strong>{{ dashboard.chatbot.selected_playlist.title }}</strong>
+        </p>
+        <form method="post" action="/students/{{ student.id }}/chat/send">
+            <div class="mb-2">
+                <textarea
+                    class="form-control"
+                    name="question"
+                    rows="3"
+                    maxlength="1000"
+                    placeholder="Ask any doubt from this selected playlist..."
+                    required
+                ></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary btn-sm">Ask Chatbot</button>
+        </form>
+
+        {% if dashboard.chatbot.messages %}
+            <div class="chat-window mt-3">
+                {% for item in dashboard.chatbot.messages %}
+                    <div class="chat-bubble {% if item.role == 'user' %}chat-user{% else %}chat-assistant{% endif %}">
+                        <div class="small fw-semibold mb-1">
+                            {% if item.role == "user" %}You{% else %}AI Mentor{% endif %}
+                        </div>
+                        <div>{{ item.message_text | replace('\n', '<br>') | safe }}</div>
+                        <div class="small text-muted mt-1">{{ item.created_at }}</div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted mt-3 mb-0">No chat yet. Ask your first doubt.</p>
+        {% endif %}
+    {% else %}
+        <p class="text-muted mb-0">{{ dashboard.chatbot.reason }}</p>
+    {% endif %}
+</section>
+
+<section id="opportunities" class="page-card p-4 mb-4">
+    <h3 class="h5 mb-3">Opportunities</h3>
+
+    <ul class="nav nav-tabs mb-3" id="opportunityTabs" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#eligible" type="button">Eligible Now</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#almost" type="button">Almost Eligible</button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#soon" type="button">Coming Soon</button>
+        </li>
+    </ul>
+
+    <div class="tab-content">
+        <div class="tab-pane fade show active" id="eligible">
+            {% set items = dashboard.opportunities.eligible_now %}
+            {% include "partials/opportunity_bucket.html" %}
+        </div>
+        <div class="tab-pane fade" id="almost">
+            {% set items = dashboard.opportunities.almost_eligible %}
+            {% include "partials/opportunity_bucket.html" %}
+        </div>
+        <div class="tab-pane fade" id="soon">
+            {% set items = dashboard.opportunities.coming_soon %}
+            {% include "partials/opportunity_bucket.html" %}
+        </div>
+    </div>
+</section>
+
+<section class="page-card p-4 mb-4">
+    <h3 class="h5 mb-3">Likely Eligible In Next 7 Days</h3>
+    {% if dashboard.opportunity_forecast_7_days %}
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th>Opportunity</th>
+                        <th>Likely Eligible Date</th>
+                        <th>Skills To Unlock</th>
+                        <th>Deadline</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in dashboard.opportunity_forecast_7_days %}
+                    <tr>
+                        <td>
+                            <div class="fw-semibold">{{ item.title }}</div>
+                            <div class="small text-muted">{{ item.company }}{% if item.type %} | {{ item.type }}{% endif %}</div>
+                            <a href="{{ item.url }}" target="_blank" rel="noreferrer">Open</a>
+                        </td>
+                        <td>{{ item.predicted_eligible_date }}</td>
+                        <td>
+                            <div class="skills-list">
+                                {% for skill in item.skills_to_unlock %}
+                                    <span class="skill-pill">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        </td>
+                        <td>{{ item.deadline or "Not specified" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-muted mb-0">No opportunities are projected to become eligible in the next 7 days yet.</p>
+    {% endif %}
+</section>
+
+<section id="notifications" class="page-card p-4">
+    <h3 class="h5 mb-3">Notifications</h3>
+    {% if dashboard.notifications %}
+        <ul class="list-group">
+            {% for note in dashboard.notifications %}
+                <li class="list-group-item">
+                    <div class="fw-semibold">{{ note.title }}</div>
+                    <div>{{ note.body }}</div>
+                    <div class="small text-muted">{{ note.created_at }}</div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="text-muted mb-0">No notifications yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

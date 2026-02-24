@@ -14,6 +14,21 @@ client = OpenAI(
 )
 
 
+def _base_messages(playlist: dict, playlist_summary: dict) -> list[dict]:
+    prompts = build_playlist_qna_prompt(
+        playlist_title=playlist["title"],
+        channel_name=playlist.get("channel_title", ""),
+        playlist_description=playlist.get("description", ""),
+        top_video_titles=playlist.get("top_video_titles", []),
+        playlist_summary=playlist_summary,
+        student_question="",
+    )
+    return [
+        {"role": "system", "content": prompts["system_prompt"]},
+        {"role": "user", "content": prompts["user_prompt"]},
+    ]
+
+
 def answer_playlist_question(
     playlist: dict,
     playlist_summary: dict,
@@ -24,23 +39,37 @@ def answer_playlist_question(
     Returns plain text answer.
     """
 
-    prompts = build_playlist_qna_prompt(
-        playlist_title=playlist["title"],
-        channel_name=playlist.get("channel_title", ""),
-        playlist_description=playlist.get("description", ""),
-        top_video_titles=playlist.get("top_video_titles", []),
+    return answer_playlist_question_with_history(
+        playlist=playlist,
         playlist_summary=playlist_summary,
         student_question=student_question,
+        conversation_history=[],
     )
 
+
+def answer_playlist_question_with_history(
+    playlist: dict,
+    playlist_summary: dict,
+    student_question: str,
+    conversation_history: list[dict] | None = None,
+) -> str:
+    messages = _base_messages(playlist, playlist_summary)
+
+    for item in conversation_history or []:
+        role = str(item.get("role", "")).strip().lower()
+        content = str(item.get("content", "")).strip()
+        if role in {"user", "assistant"} and content:
+            messages.append({"role": role, "content": content})
+
+    messages.append({"role": "user", "content": student_question})
     response = client.chat.completions.create(
         model=MODEL_NAME,
-        messages=[
-            {"role": "system", "content": prompts["system_prompt"]},
-            {"role": "user", "content": prompts["user_prompt"]},
-        ],
+        messages=messages,
         temperature=0.4,
     )
+    return response.choices[0].message.content.strip()
+
+
 def start_playlist_chatbot(
     playlist: dict,
     playlist_summary: dict,
@@ -51,24 +80,12 @@ def start_playlist_chatbot(
     """
 
     # Build the base prompt once
-    base_prompts = build_playlist_qna_prompt(
-        playlist_title=playlist["title"],
-        channel_name=playlist.get("channel_title", ""),
-        playlist_description=playlist.get("description", ""),
-        top_video_titles=playlist.get("top_video_titles", []),
-        playlist_summary=playlist_summary,
-        student_question="",
-    )
-
-    # Initialize conversation history
-    conversation_history = [
-        {"role": "system", "content": base_prompts["system_prompt"]},
-        {"role": "user", "content": base_prompts["user_prompt"]},
-    ]
+    conversation_history = _base_messages(playlist, playlist_summary)
 
     print("\nYou can now ask multiple questions about this playlist.")
     print("Type 'exit' to end the chat.\n")
 
+    answer = ""
     while True:
         student_question = input("> ").strip()
 
@@ -95,4 +112,4 @@ def start_playlist_chatbot(
         print("\nANSWER:\n")
         print(answer)
         print("\n---\n")
-    return response.choices[0].message.content.strip()
+    return answer

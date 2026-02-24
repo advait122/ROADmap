@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}Goal Setup | Career Roadmap AI{% endblock %}
+{% block body_class %}onboarding-page{% endblock %}
+{% block page_styles %}
+<link href="/static/css/onboarding.css" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<section class="page-card p-4 p-md-5">
+    <h2 class="h4 mb-2">Goal-First Setup</h2>
+    <p class="text-muted mb-4">Enter your goal, current skills, and timeline. We will generate your roadmap automatically.</p>
+
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/onboarding" class="row g-3">
+        <div class="col-md-6">
+            <label class="form-label">Name</label>
+            <input type="text" name="name" class="form-control" required>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Branch</label>
+            <select name="branch" class="form-select" required>
+                <option value="" disabled selected>Select branch</option>
+                {% for branch in branch_options %}
+                    <option value="{{ branch }}">{{ branch }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Current Year</label>
+            <select name="current_year" class="form-select" required>
+                <option value="" disabled selected>Select year</option>
+                {% for year in year_options %}
+                    <option value="{{ year }}">{{ year }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-8">
+            <label class="form-label">Goal Text</label>
+            <input
+                type="text"
+                name="goal_text"
+                class="form-control"
+                placeholder="Example: Job in Google as software engineer"
+                required
+            >
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Timeline</label>
+            <select name="target_duration_months" class="form-select" required>
+                {% for month in timeline_options %}
+                    <option value="{{ month }}" {% if month == 24 %}selected{% endif %}>{{ month }} months</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Weekly Hours</label>
+            <input
+                type="number"
+                name="weekly_study_hours"
+                class="form-control"
+                min="2"
+                max="60"
+                value="{{ default_weekly_hours }}"
+                required
+            >
+        </div>
+
+        <div class="col-12">
+            <label class="form-label">Current Skills</label>
+            <div class="row row-cols-2 row-cols-md-4 g-2">
+                {% for skill in predefined_skills %}
+                    <div class="col">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="selected_skills" value="{{ skill }}" id="skill_{{ loop.index }}">
+                            <label class="form-check-label" for="skill_{{ loop.index }}">{{ skill }}</label>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="col-12">
+            <label class="form-label">Add Other Skills (optional)</label>
+            <textarea
+                name="custom_skills"
+                class="form-control"
+                rows="3"
+                placeholder="Example: Flask, React, Computer Networks"
+            ></textarea>
+        </div>
+
+        <div class="col-12">
+            <button type="submit" class="btn btn-primary">Generate My Roadmap</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

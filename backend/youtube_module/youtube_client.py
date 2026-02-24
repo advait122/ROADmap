@@ -1,12 +1,22 @@
 # youtube_client.py
 
 from googleapiclient.discovery import build
-from config import (
-    YOUTUBE_API_KEY,
-    YOUTUBE_API_SERVICE_NAME,
-    YOUTUBE_API_VERSION,
-    MAX_RESULTS_PER_QUERY,
-)
+try:
+    # Package import path (used by web app runtime)
+    from .config import (
+        MAX_RESULTS_PER_QUERY,
+        YOUTUBE_API_KEY,
+        YOUTUBE_API_SERVICE_NAME,
+        YOUTUBE_API_VERSION,
+    )
+except ImportError:
+    # Script import path (used by `python main.py` from this directory)
+    from config import (
+        MAX_RESULTS_PER_QUERY,
+        YOUTUBE_API_KEY,
+        YOUTUBE_API_SERVICE_NAME,
+        YOUTUBE_API_VERSION,
+    )
 
 
 def get_youtube_client():
@@ -53,6 +63,7 @@ def search_playlists(query: str):
                 "title": snippet["title"],
                 "description": snippet.get("description", ""),
                 "channel_title": snippet.get("channelTitle", ""),
+                "channel_id": snippet.get("channelId", ""),
             }
         )
 

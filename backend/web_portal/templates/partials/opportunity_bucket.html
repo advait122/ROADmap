@@ -1,0 +1,42 @@
+{% if items %}
+    <div class="table-responsive">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Opportunity</th>
+                    <th>Type</th>
+                    <th>Deadline</th>
+                    <th>Match</th>
+                    <th>Missing Skills</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td>
+                        <div class="fw-semibold">{{ item.title }}</div>
+                        <div class="small text-muted">{{ item.company }}</div>
+                        <a href="{{ item.url }}" target="_blank" rel="noreferrer">Open</a>
+                    </td>
+                    <td>{{ item.type or "-" }}</td>
+                    <td>{{ item.deadline or "Not specified" }}</td>
+                    <td>{{ "%.0f"|format(item.match_score * 100) }}%</td>
+                    <td>
+                        {% if item.missing_skills %}
+                            <div class="skills-list">
+                                {% for skill in item.missing_skills %}
+                                    <span class="skill-pill">{{ skill }}</span>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <span class="text-success">None</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% else %}
+    <p class="text-muted mb-0">No opportunities in this bucket yet.</p>
+{% endif %}
