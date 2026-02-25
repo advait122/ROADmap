@@ -1,14 +1,16 @@
 {% extends "base.html" %}
-{% block title %}Dashboard | Career Roadmap AI{% endblock %}
+{% block title %}Dashboard | CodeMap{% endblock %}
 {% block body_class %}dashboard-page{% endblock %}
 {% block page_styles %}
-<link href="/static/css/dashboard.css" rel="stylesheet">
+<link href="/static/css/dashboard.css?v={{ asset_version }}" rel="stylesheet">
 {% endblock %}
 {% block content %}
-<section class="page-card p-4 p-md-5 mb-4">
+{% set section = active_section if active_section else "roadmap" %}
+{% if section == "roadmap" %}
+<section class="page-card goal-card p-4 p-md-5 mb-4">
     <div class="d-flex flex-wrap justify-content-between gap-3">
         <div>
-            <h2 class="h4 mb-1">Roadmap Dashboard</h2>
+            <h2 class="h4 mb-1">Goal</h2>
             <p class="text-muted mb-0">{{ dashboard.goal.goal_text }}</p>
             <p class="small text-muted mb-0">
                 Target Company: {{ dashboard.goal.target_company or "Not clear" }} |
@@ -18,7 +20,7 @@
         <div>
             <a href="/onboarding" class="btn btn-outline-secondary btn-sm">Create New Goal</a>
             <form method="post" action="/students/{{ student.id }}/roadmap/replan" class="d-inline ms-2">
-                <button type="submit" class="btn btn-outline-primary btn-sm">Replan Now</button>
+                <button type="submit" class="btn btn-sm replan-btn">Replan Now</button>
             </form>
         </div>
     </div>
@@ -33,15 +35,34 @@
         </div>
     {% endif %}
 </section>
+{% endif %}
 
+{% if section != "roadmap" and error %}
+<section class="page-card p-3 mb-4">
+    <div class="alert alert-danger mb-0">{{ error }}</div>
+</section>
+{% endif %}
+
+{% if section == "roadmap" %}
 <section class="row g-4 mb-4">
     <div class="col-lg-4">
         <div class="page-card p-4 h-100">
             <h3 class="h6 mb-3">Progress</h3>
-            <p class="mb-1">Task Completion: <strong>{{ "%.1f"|format(dashboard.progress.completion_percent) }}%</strong></p>
-            <p class="mb-0 text-muted">
-                {{ dashboard.progress.completed_tasks }}/{{ dashboard.progress.total_tasks }} tasks completed
-            </p>
+            <div class="progress-panel">
+                <div
+                    class="progress-ring"
+                    style="--progress-value: {{ '%.2f'|format(dashboard.progress.completion_percent) }};"
+                    aria-label="Task completion progress"
+                >
+                    <div class="progress-ring-center">
+                        <span class="progress-ring-value">{{ dashboard.progress.completed_tasks }}/{{ dashboard.progress.total_tasks }}</span>
+                        <span class="progress-ring-subvalue">tasks</span>
+                    </div>
+                </div>
+                <div class="progress-copy">
+                    <p class="mb-1">Task Completion: <strong>{{ "%.1f"|format(dashboard.progress.completion_percent) }}%</strong></p>
+                </div>
+            </div>
         </div>
     </div>
     <div class="col-lg-8">
@@ -103,6 +124,77 @@
         </div>
     </div>
 </section>
+{% endif %}
+
+{% if section == "tasks" %}
+{% set active_goal_skill = (dashboard.goal_skills | selectattr('is_active') | list | first) %}
+{% if active_goal_skill and active_goal_skill.ready_for_test %}
+<section class="page-card p-3 mb-4">
+    <div class="alert alert-warning mb-0">
+        Give test to proceed further.
+    </div>
+</section>
+{% endif %}
+<section id="playlist" class="page-card p-4 mb-4">
+    <h3 class="h5 mb-3">Current Skill Playlist Selection</h3>
+    {% if dashboard.active_skill %}
+        {% if dashboard.active_skill_recommendations %}
+            <div class="d-flex flex-column gap-3">
+                {% for item in dashboard.active_skill_recommendations %}
+                    <div class="border rounded p-3 playlist-card {% if item.is_selected == 1 %}playlist-card-selected{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start gap-2">
+                            <div>
+                                <div class="fw-semibold">{{ item.title }}</div>
+                                <div class="small text-muted">Channel: {{ item.channel_title }}</div>
+                            </div>
+                            <form method="post" action="/students/{{ student.id }}/skills/{{ dashboard.active_skill.id }}/playlist/select?section=tasks">
+                                <input type="hidden" name="recommendation_id" value="{{ item.id }}">
+                                <button class="btn btn-sm {% if item.is_selected == 1 %}btn-success{% else %}btn-outline-primary{% endif %}" type="submit">
+                                    {% if item.is_selected == 1 %}Selected{% else %}Select{% endif %}
+                                </button>
+                            </form>
+                        </div>
+
+                        <div class="playlist-summary-actions mt-3">
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary summary-open-btn"
+                                data-summary-title="Topic Overview"
+                                data-summary-content="{{ item.summary_human.topic_overview | tojson | forceescape }}"
+                            >
+                                Topic Overview
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary summary-open-btn"
+                                data-summary-title="Learning Experience"
+                                data-summary-content="{{ item.summary_human.learning_experience | tojson | forceescape }}"
+                            >
+                                Learning Exp
+                            </button>
+                            <button
+                                type="button"
+                                class="btn btn-sm btn-outline-primary summary-open-btn"
+                                data-summary-title="Topics Covered"
+                                data-summary-content="{{ item.summary_human.topics_covered_summary | tojson | forceescape }}"
+                            >
+                                Topics Covered
+                            </button>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            {% if dashboard.playlist_recommendation_error %}
+                <p class="text-muted mb-0">{{ dashboard.playlist_recommendation_error }}</p>
+            {% else %}
+                <p class="text-muted mb-0">No playlist suggestions available yet.</p>
+            {% endif %}
+        {% endif %}
+    {% else %}
+        <div class="alert alert-success mb-0">All roadmap skills are completed.</div>
+    {% endif %}
+</section>
 
 <section id="tasks" class="page-card p-4 mb-4">
     <h3 class="h5 mb-3">Today and Upcoming Tasks</h3>
@@ -111,8 +203,7 @@
             Select one playlist for <strong>{{ dashboard.active_skill.skill_name }}</strong> first.
             Task completion will unlock after selection.
         </div>
-    {% endif %}
-    {% if dashboard.upcoming_tasks %}
+    {% elif dashboard.upcoming_tasks %}
         <div class="table-responsive">
             <table class="table align-middle">
                 <thead>
@@ -134,7 +225,7 @@
                         <td>{{ task.skill_name or "-" }}</td>
                         <td>{{ task.target_minutes }}</td>
                         <td>
-                            <form method="post" action="/students/{{ student.id }}/tasks/{{ task.id }}/completion">
+                            <form method="post" action="/students/{{ student.id }}/tasks/{{ task.id }}/completion?section=tasks">
                                 <input type="hidden" name="is_completed" value="{% if task.is_completed == 1 %}0{% else %}1{% endif %}">
                                 <button type="submit" class="btn btn-sm {% if task.is_completed == 1 %}btn-success{% else %}btn-outline-primary{% endif %}">
                                     {% if task.is_completed == 1 %}Done{% else %}Mark Done{% endif %}
@@ -151,86 +242,128 @@
     {% endif %}
 </section>
 
-<section class="row g-4 mb-4" id="playlist">
-    <div class="col-lg-6">
-        <div class="page-card p-4 h-100">
-            <h3 class="h6 mb-3">Skill Tests</h3>
-            {% set ready_items = dashboard.goal_skills | selectattr('ready_for_test') | list %}
-            {% if ready_items %}
-                <ul class="list-group">
-                    {% for item in ready_items %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>{{ item.skill_name }}</span>
-                            <a class="btn btn-sm btn-primary" href="/students/{{ student.id }}/skills/{{ item.id }}/test">Take Test</a>
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% else %}
-                <p class="text-muted mb-0">Complete all tasks for a skill to unlock its test.</p>
-            {% endif %}
+<div id="summaryModalOverlay" class="summary-modal-overlay" aria-hidden="true">
+    <div class="summary-modal-card" role="dialog" aria-modal="true" aria-labelledby="summaryModalTitle">
+        <div class="summary-modal-header">
+            <h4 id="summaryModalTitle" class="summary-modal-title mb-0">Summary</h4>
+            <button type="button" class="btn-close" aria-label="Close" id="summaryModalClose"></button>
         </div>
+        <div id="summaryModalBody" class="summary-modal-body"></div>
     </div>
-    <div class="col-lg-6">
-        <div class="page-card p-4 h-100">
-            <h3 class="h6 mb-3">Current Skill Playlist Selection</h3>
-            {% if dashboard.active_skill %}
-                <p class="mb-2"><strong>Current skill:</strong> {{ dashboard.active_skill.skill_name }}</p>
-                {% if dashboard.selected_playlist %}
-                    <div class="alert alert-success py-2">
-                        Selected: <strong>{{ dashboard.selected_playlist.title }}</strong>
-                    </div>
-                {% endif %}
+</div>
 
-                {% if dashboard.active_skill_recommendations %}
-                    <div class="d-flex flex-column gap-3">
-                        {% for item in dashboard.active_skill_recommendations %}
-                            <div class="border rounded p-3 {% if item.is_selected == 1 %}border-success{% endif %}">
-                                <div class="d-flex justify-content-between align-items-start gap-2">
-                                    <div>
-                                        <div class="fw-semibold">{{ item.title }}</div>
-                                        <div class="small text-muted">Channel: {{ item.channel_title }}</div>
-                                        {% if item.summary.channel_url %}
-                                            <a href="{{ item.summary.channel_url }}" target="_blank" rel="noreferrer">Open channel URL</a><br>
-                                        {% endif %}
-                                        <a href="{{ item.playlist_url }}" target="_blank" rel="noreferrer">Open playlist URL</a>
-                                    </div>
-                                    <form method="post" action="/students/{{ student.id }}/skills/{{ dashboard.active_skill.id }}/playlist/select">
-                                        <input type="hidden" name="recommendation_id" value="{{ item.id }}">
-                                        <button class="btn btn-sm {% if item.is_selected == 1 %}btn-success{% else %}btn-outline-primary{% endif %}" type="submit">
-                                            {% if item.is_selected == 1 %}Selected{% else %}Select{% endif %}
-                                        </button>
-                                    </form>
-                                </div>
+<script>
+    (function () {
+        const overlay = document.getElementById("summaryModalOverlay");
+        if (!overlay) return;
 
-                                <div class="small mt-3">
-                                    <div class="fw-semibold">Topic Overview</div>
-                                    <div>{{ item.summary.topic_overview or "Not available" }}</div>
-                                </div>
-                                <div class="small mt-2">
-                                    <div class="fw-semibold">Learning Experience</div>
-                                    <div>{{ item.summary.learning_experience or "Not available" }}</div>
-                                </div>
-                                <div class="small mt-2">
-                                    <div class="fw-semibold">Topics Covered</div>
-                                    <div>{{ item.summary.topics_covered_summary or "Not available" }}</div>
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                {% else %}
-                    {% if dashboard.playlist_recommendation_error %}
-                        <p class="text-muted mb-0">{{ dashboard.playlist_recommendation_error }}</p>
-                    {% else %}
-                        <p class="text-muted mb-0">No playlist suggestions available yet.</p>
-                    {% endif %}
-                {% endif %}
-            {% else %}
-                <div class="alert alert-success mb-0">All roadmap skills are completed.</div>
-            {% endif %}
-        </div>
-    </div>
+        const body = document.getElementById("summaryModalBody");
+        const title = document.getElementById("summaryModalTitle");
+        const closeBtn = document.getElementById("summaryModalClose");
+        const openButtons = document.querySelectorAll(".summary-open-btn");
+
+        function renderSummaryContent(rawContent) {
+            body.innerHTML = "";
+            const text = String(rawContent || "Not available.").trim();
+            const lines = text
+                .split(/\r?\n/)
+                .map((line) => line.trim())
+                .filter(Boolean);
+
+            if (!lines.length) {
+                body.textContent = "Not available.";
+                return;
+            }
+
+            lines.forEach((line) => {
+                const paragraph = document.createElement("p");
+                paragraph.className = "summary-line";
+
+                const bulletMatch = line.match(/^-+\s*(.+)$/);
+                const normalized = bulletMatch ? bulletMatch[1].trim() : line;
+                if (bulletMatch) paragraph.classList.add("summary-line-bullet");
+
+                const splitIndex = normalized.indexOf(":");
+                if (splitIndex > 0) {
+                    const key = normalized.slice(0, splitIndex).trim();
+                    const value = normalized.slice(splitIndex + 1).trim();
+
+                    const keySpan = document.createElement("span");
+                    keySpan.className = "summary-line-key";
+                    keySpan.textContent = key + ": ";
+                    paragraph.appendChild(keySpan);
+
+                    const valueSpan = document.createElement("span");
+                    valueSpan.textContent = value;
+                    paragraph.appendChild(valueSpan);
+                } else {
+                    paragraph.textContent = normalized;
+                }
+
+                body.appendChild(paragraph);
+            });
+        }
+
+        function openModal(summaryTitle, encodedContent) {
+            let parsed = "Not available.";
+            try {
+                parsed = JSON.parse(encodedContent || "\"Not available.\"");
+            } catch (error) {
+                parsed = "Not available.";
+            }
+            title.textContent = summaryTitle || "Summary";
+            renderSummaryContent(parsed);
+            overlay.classList.add("show");
+            overlay.setAttribute("aria-hidden", "false");
+            document.body.classList.add("summary-modal-open");
+        }
+
+        function closeModal() {
+            overlay.classList.remove("show");
+            overlay.setAttribute("aria-hidden", "true");
+            document.body.classList.remove("summary-modal-open");
+        }
+
+        openButtons.forEach((button) => {
+            button.addEventListener("click", () => {
+                openModal(
+                    button.getAttribute("data-summary-title"),
+                    button.getAttribute("data-summary-content"),
+                );
+            });
+        });
+
+        closeBtn?.addEventListener("click", closeModal);
+        overlay.addEventListener("click", (event) => {
+            if (event.target === overlay) closeModal();
+        });
+        document.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" && overlay.classList.contains("show")) closeModal();
+        });
+    })();
+</script>
+{% endif %}
+
+{% if section == "tests" %}
+<section id="tests" class="page-card p-4 mb-4">
+    <h3 class="h5 mb-3">Skill Tests</h3>
+    {% set ready_items = dashboard.goal_skills | selectattr('ready_for_test') | list %}
+    {% if ready_items %}
+        <ul class="list-group">
+            {% for item in ready_items %}
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span>{{ item.skill_name }}</span>
+                    <a class="btn btn-sm btn-primary" href="/students/{{ student.id }}/skills/{{ item.id }}/test">Take Test</a>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="text-muted mb-0">Complete all tasks for a skill to unlock its test.</p>
+    {% endif %}
 </section>
+{% endif %}
 
+{% if section == "doubtbot" %}
 <section id="chatbot" class="page-card p-4 mb-4">
     <h3 class="h5 mb-3">Playlist Doubt Chatbot</h3>
     {% if dashboard.chatbot.enabled %}
@@ -238,7 +371,7 @@
             Active skill: <strong>{{ dashboard.chatbot.active_skill.skill_name }}</strong> |
             Playlist: <strong>{{ dashboard.chatbot.selected_playlist.title }}</strong>
         </p>
-        <form method="post" action="/students/{{ student.id }}/chat/send">
+        <form method="post" action="/students/{{ student.id }}/chat/send?section=doubtbot">
             <div class="mb-2">
                 <textarea
                     class="form-control"
@@ -271,7 +404,9 @@
         <p class="text-muted mb-0">{{ dashboard.chatbot.reason }}</p>
     {% endif %}
 </section>
+{% endif %}
 
+{% if section == "opportunities" %}
 <section id="opportunities" class="page-card p-4 mb-4">
     <h3 class="h5 mb-3">Opportunities</h3>
 
@@ -342,7 +477,9 @@
         <p class="text-muted mb-0">No opportunities are projected to become eligible in the next 7 days yet.</p>
     {% endif %}
 </section>
+{% endif %}
 
+{% if section == "notifications" %}
 <section id="notifications" class="page-card p-4">
     <h3 class="h5 mb-3">Notifications</h3>
     {% if dashboard.notifications %}
@@ -359,4 +496,5 @@
         <p class="text-muted mb-0">No notifications yet.</p>
     {% endif %}
 </section>
+{% endif %}
 {% endblock %}

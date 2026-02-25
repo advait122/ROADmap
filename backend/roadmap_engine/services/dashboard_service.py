@@ -1,3 +1,6 @@
+import ast
+import json
+
 from backend.roadmap_engine.storage import goals_repo, roadmap_repo, students_repo
 from backend.roadmap_engine.utils import utc_today
 
@@ -44,6 +47,71 @@ def _active_skill(goal_skills: list[dict]) -> dict | None:
     return pending[0] if pending else None
 
 
+def _humanize_summary_value(value: object) -> str:
+    if value is None:
+        return ""
+
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return ""
+
+        parsed: object | None = None
+        if text.startswith("{") or text.startswith("["):
+            try:
+                parsed = json.loads(text)
+            except Exception:
+                try:
+                    parsed = ast.literal_eval(text)
+                except Exception:
+                    parsed = None
+        if parsed is not None:
+            return _humanize_summary_value(parsed)
+        return text
+
+    if isinstance(value, dict):
+        lines: list[str] = []
+        for key, val in value.items():
+            cleaned = _humanize_summary_value(val)
+            if not cleaned:
+                continue
+            key_label = str(key).replace("_", " ").strip().title()
+            lines.append(f"{key_label}: {cleaned}")
+        return "\n".join(lines)
+
+    if isinstance(value, (list, tuple, set)):
+        lines: list[str] = []
+        for item in value:
+            cleaned = _humanize_summary_value(item)
+            if not cleaned:
+                continue
+            for segment in cleaned.splitlines():
+                segment = segment.strip()
+                if segment:
+                    lines.append(f"- {segment}")
+        return "\n".join(lines)
+
+    return str(value).strip()
+
+
+def _clean_recommendation_summaries(recommendations: list[dict]) -> list[dict]:
+    cleaned: list[dict] = []
+    for item in recommendations:
+        normalized_item = dict(item)
+        summary = normalized_item.get("summary", {}) or {}
+        normalized_item["summary_human"] = {
+            "topic_overview": _humanize_summary_value(summary.get("topic_overview")) or "Not available.",
+            "learning_experience": (
+                _humanize_summary_value(summary.get("learning_experience")) or "Not available."
+            ),
+            "topics_covered_summary": (
+                _humanize_summary_value(summary.get("topics_covered_summary")) or "Not available."
+            ),
+        }
+        cleaned.append(normalized_item)
+    return cleaned
+
+
 def get_dashboard(student_id: int) -> dict:
     student = _assert_student(student_id)
     goal, plan = _active_goal_and_plan(student_id)
@@ -79,6 +147,7 @@ def get_dashboard(student_id: int) -> dict:
             goal_skill_id=active_skill["id"],
             skill_name=active_skill["skill_name"],
         )
+        recommendations = _clean_recommendation_summaries(recommendations)
         selected_playlist = youtube_learning_service.get_selected_playlist(
             goal_id=goal["id"],
             goal_skill_id=active_skill["id"],

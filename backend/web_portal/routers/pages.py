@@ -1,4 +1,5 @@
 from pathlib import Path
+import time
 from urllib.parse import quote_plus
 
 from fastapi import APIRouter, Form, HTTPException, Request
@@ -27,6 +28,27 @@ router = APIRouter()
 TEMPLATES_DIR = Path(__file__).resolve().parents[1] / "templates"
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
+ALLOWED_DASHBOARD_SECTIONS = {
+    "roadmap",
+    "tasks",
+    "tests",
+    "doubtbot",
+    "opportunities",
+    "notifications",
+}
+
+
+def _asset_version() -> str:
+    # Force fresh CSS fetch on each request across devices/browsers.
+    return str(int(time.time()))
+
+
+def _normalize_dashboard_section(section: str, default: str = "roadmap") -> str:
+    normalized = (section or "").lower().strip()
+    if normalized in ALLOWED_DASHBOARD_SECTIONS:
+        return normalized
+    return default
+
 
 def _student_or_404(student_id: int) -> dict:
     student = students_repo.get_student(student_id)
@@ -49,6 +71,7 @@ def onboarding_page(request: Request, error: str = "") -> HTMLResponse:
         "onboarding.html",
         {
             "request": request,
+            "asset_version": _asset_version(),
             "error": error,
             "branch_options": BRANCH_OPTIONS,
             "year_options": YEAR_OPTIONS,
@@ -113,8 +136,14 @@ def manual_replan(student_id: int) -> RedirectResponse:
 
 
 @router.get("/students/{student_id}/dashboard", response_class=HTMLResponse)
-def dashboard_page(request: Request, student_id: int, error: str = "") -> HTMLResponse:
+def dashboard_page(
+    request: Request,
+    student_id: int,
+    error: str = "",
+    section: str = "roadmap",
+) -> HTMLResponse:
     student = _student_or_404(student_id)
+    active_section = _normalize_dashboard_section(section, "roadmap")
 
     try:
         dashboard = dashboard_service.get_dashboard(student_id)
@@ -126,9 +155,11 @@ def dashboard_page(request: Request, student_id: int, error: str = "") -> HTMLRe
         "dashboard.html",
         {
             "request": request,
+            "asset_version": _asset_version(),
             "student": student,
             "dashboard": dashboard,
             "error": error,
+            "active_section": active_section,
         },
     )
 
@@ -138,18 +169,23 @@ def update_task_completion(
     student_id: int,
     task_id: int,
     is_completed: int = Form(...),
+    section: str = "tasks",
 ) -> RedirectResponse:
     _student_or_404(student_id)
+    active_section = _normalize_dashboard_section(section, "tasks")
     try:
         dashboard_service.set_task_completion(student_id, task_id, completed=bool(is_completed))
     except ValueError as error:
         escaped = quote_plus(str(error))
         return RedirectResponse(
-            url=f"/students/{student_id}/dashboard?error={escaped}",
+            url=f"/students/{student_id}/dashboard?section={active_section}&error={escaped}",
             status_code=303,
         )
 
-    return RedirectResponse(url=f"/students/{student_id}/dashboard", status_code=303)
+    return RedirectResponse(
+        url=f"/students/{student_id}/dashboard?section={active_section}",
+        status_code=303,
+    )
 
 
 @router.post("/students/{student_id}/skills/{goal_skill_id}/playlist/select")
@@ -157,8 +193,10 @@ def select_playlist(
     student_id: int,
     goal_skill_id: int,
     recommendation_id: str = Form(default=""),
+    section: str = "tasks",
 ) -> RedirectResponse:
     _student_or_404(student_id)
+    active_section = _normalize_dashboard_section(section, "tasks")
     try:
         from backend.roadmap_engine.storage import goals_repo
         from backend.roadmap_engine.services import youtube_learning_service
@@ -196,29 +234,37 @@ def select_playlist(
     except ValueError as error:
         escaped = quote_plus(str(error))
         return RedirectResponse(
-            url=f"/students/{student_id}/dashboard?error={escaped}",
+            url=f"/students/{student_id}/dashboard?section={active_section}&error={escaped}",
             status_code=303,
         )
 
-    return RedirectResponse(url=f"/students/{student_id}/dashboard", status_code=303)
+    return RedirectResponse(
+        url=f"/students/{student_id}/dashboard?section={active_section}",
+        status_code=303,
+    )
 
 
 @router.post("/students/{student_id}/chat/send")
 def chatbot_send(
     student_id: int,
     question: str = Form(...),
+    section: str = "doubtbot",
 ) -> RedirectResponse:
     _student_or_404(student_id)
+    active_section = _normalize_dashboard_section(section, "doubtbot")
     try:
         chatbot_service.ask_question(student_id, question)
     except ValueError as error:
         escaped = quote_plus(str(error))
         return RedirectResponse(
-            url=f"/students/{student_id}/dashboard?error={escaped}#chatbot",
+            url=f"/students/{student_id}/dashboard?section={active_section}&error={escaped}#chatbot",
             status_code=303,
         )
 
-    return RedirectResponse(url=f"/students/{student_id}/dashboard#chatbot", status_code=303)
+    return RedirectResponse(
+        url=f"/students/{student_id}/dashboard?section={active_section}#chatbot",
+        status_code=303,
+    )
 
 
 @router.get("/students/{student_id}/skills/{goal_skill_id}/test", response_class=HTMLResponse)
@@ -229,7 +275,7 @@ def skill_test_page(request: Request, student_id: int, goal_skill_id: int) -> HT
     except ValueError as error:
         escaped = quote_plus(str(error))
         return RedirectResponse(
-            url=f"/students/{student_id}/dashboard?error={escaped}",
+            url=f"/students/{student_id}/dashboard?section=tests&error={escaped}",
             status_code=303,
         )
 
@@ -237,8 +283,10 @@ def skill_test_page(request: Request, student_id: int, goal_skill_id: int) -> HT
         "skill_test.html",
         {
             "request": request,
+            "asset_version": _asset_version(),
             "student": student,
             "assessment": assessment,
+            "active_section": "tests",
         },
     )
 
@@ -267,8 +315,8 @@ async def skill_test_submit(
     except ValueError as error:
         escaped = quote_plus(str(error))
         return RedirectResponse(
-            url=f"/students/{student_id}/dashboard?error={escaped}",
+            url=f"/students/{student_id}/dashboard?section=tests&error={escaped}",
             status_code=303,
         )
 
-    return RedirectResponse(url=f"/students/{student_id}/dashboard", status_code=303)
+    return RedirectResponse(url=f"/students/{student_id}/dashboard?section=tests", status_code=303)
