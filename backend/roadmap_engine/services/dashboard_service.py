@@ -1,5 +1,6 @@
 import ast
 import json
+import re
 
 from backend.roadmap_engine.storage import goals_repo, roadmap_repo, students_repo
 from backend.roadmap_engine.utils import utc_today
@@ -112,6 +113,113 @@ def _clean_recommendation_summaries(recommendations: list[dict]) -> list[dict]:
     return cleaned
 
 
+def _clean_notification_text(text: str) -> str:
+    cleaned = " ".join(str(text or "").split())
+
+    def pluralize(match: re.Match[str]) -> str:
+        count = int(match.group(1))
+        noun = match.group(2)
+        if count == 1:
+            return f"{count} {noun}"
+        return f"{count} {noun}s"
+
+    cleaned = re.sub(r"\b(\d+)\s+([A-Za-z]+)\(s\)", pluralize, cleaned)
+    return cleaned.strip()
+
+
+def _humanize_notification(note: dict) -> dict:
+    item = dict(note)
+    note_type = str(item.get("notification_type", "")).strip()
+    title = str(item.get("title", "Notification")).strip() or "Notification"
+    detail = _clean_notification_text(str(item.get("body", "")).strip())
+
+    opportunity_title = str(item.get("opportunity_title", "")).strip()
+    opportunity_company = str(item.get("opportunity_company", "")).strip()
+    opportunity_url = str(item.get("opportunity_url", "")).strip()
+
+    item["ui_link_text"] = ""
+    item["ui_link_url"] = ""
+    item["ui_detail_prefix"] = ""
+    item["ui_detail_suffix"] = ""
+
+    if note_type == "newly_eligible":
+        if opportunity_title:
+            title = f"Now eligible: {opportunity_title}"
+        else:
+            title = "You are now eligible"
+        if opportunity_title:
+            item["ui_link_text"] = opportunity_title
+            if opportunity_url:
+                item["ui_link_url"] = opportunity_url
+            item["ui_detail_prefix"] = "You are now eligible to apply for "
+            if opportunity_company:
+                item["ui_detail_suffix"] = f" at {opportunity_company}."
+            else:
+                item["ui_detail_suffix"] = "."
+            detail = (
+                f"{item['ui_detail_prefix']}{opportunity_title}{item['ui_detail_suffix']}"
+            )
+
+    elif note_type == "deadline_alert":
+        if opportunity_title:
+            title = f"Deadline soon: {opportunity_title}"
+        else:
+            title = "Application deadline approaching"
+
+        days_match = re.search(r"closes in (\d+)\s+day", detail, flags=re.IGNORECASE)
+        status_match = re.search(r"Status:\s*([^\.]+)", detail, flags=re.IGNORECASE)
+
+        detail_segments: list[str] = []
+        if opportunity_title:
+            item["ui_link_text"] = opportunity_title
+            if opportunity_url:
+                item["ui_link_url"] = opportunity_url
+            if opportunity_company:
+                detail_segments.append(f"at {opportunity_company}")
+
+        if days_match:
+            days = int(days_match.group(1))
+            day_word = "day" if days == 1 else "days"
+            detail_segments.append(f"closes in {days} {day_word}")
+
+        if detail_segments:
+            item["ui_detail_suffix"] = " " + " ".join(detail_segments).strip() + "."
+            detail = (
+                f"{opportunity_title}{item['ui_detail_suffix']}"
+                if opportunity_title
+                else " ".join(detail_segments).strip() + "."
+            )
+
+        if status_match:
+            status = status_match.group(1).strip().replace("_", " ")
+            if status:
+                detail = f"{detail} Current eligibility: {status}.".strip()
+                if opportunity_title:
+                    item["ui_detail_suffix"] = (
+                        f"{item['ui_detail_suffix']} Current eligibility: {status}."
+                    )
+
+    elif note_type == "skill_test_passed":
+        title = "Skill test passed"
+        detail = detail or "Great job. Your skill has been marked as completed."
+
+    elif note_type == "skill_test_failed":
+        title = "Skill test retry needed"
+        detail = detail or "Review the suggested topics and try the test again."
+
+    elif note_type == "roadmap_replanned":
+        title = "Roadmap updated"
+        detail = detail or "Your pending tasks were rescheduled to keep your plan on track."
+
+    item["ui_title"] = title
+    item["ui_detail"] = detail or "More details are not available."
+    return item
+
+
+def _humanize_notifications(notifications: list[dict]) -> list[dict]:
+    return [_humanize_notification(item) for item in notifications]
+
+
 def get_dashboard(student_id: int) -> dict:
     student = _assert_student(student_id)
     goal, plan = _active_goal_and_plan(student_id)
@@ -134,7 +242,7 @@ def get_dashboard(student_id: int) -> dict:
 
     matches = matching_service.refresh_opportunity_matches(student_id)
     forecast_7_days = matching_service.forecast_eligible_in_days(student_id, days=7)
-    notifications = matching_service.list_notifications(student_id)
+    notifications = _humanize_notifications(matching_service.list_notifications(student_id))
 
     selected_playlist = None
     recommendations = []
