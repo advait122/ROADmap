@@ -1,3 +1,5 @@
+import re
+
 from backend.roadmap_engine.storage import chat_repo, goals_repo, playlist_repo, students_repo
 
 
@@ -81,6 +83,48 @@ def _fallback_answer(selected_playlist: dict, question: str) -> str:
     )
 
 
+def _structure_assistant_answer(answer: str) -> str:
+    text = str(answer or "").replace("\r", "").strip()
+    if not text:
+        return ""
+
+    lines = [line.strip() for line in text.split("\n") if line.strip()]
+    if not lines:
+        return ""
+
+    bullet_pattern = re.compile(r"^([-*•]|\d+[.)])\s+")
+    has_bullets = any(bullet_pattern.match(line) for line in lines)
+
+    if has_bullets:
+        normalized: list[str] = []
+        for line in lines:
+            if bullet_pattern.match(line):
+                normalized.append("- " + bullet_pattern.sub("", line).strip())
+            else:
+                normalized.append(line)
+        return "\n".join(normalized)
+
+    compact = " ".join(lines)
+
+    sentence_parts = [
+        part.strip()
+        for part in re.split(r"(?<=[.!?])\s+", compact)
+        if part.strip()
+    ]
+    if len(sentence_parts) >= 2:
+        return "\n".join(f"- {part}" for part in sentence_parts)
+
+    clause_parts = [
+        part.strip()
+        for part in re.split(r"[;]\s*", compact)
+        if part.strip()
+    ]
+    if len(clause_parts) >= 2:
+        return "\n".join(f"- {part}" for part in clause_parts)
+
+    return compact
+
+
 def get_chat_panel(student_id: int, limit: int = 20) -> dict:
     context = _active_chat_context(student_id)
     if not context["enabled"]:
@@ -157,6 +201,8 @@ def ask_question(student_id: int, question: str) -> dict:
 
     if not answer:
         answer = _fallback_answer(selected_playlist, clean_question)
+
+    answer = _structure_assistant_answer(answer)
 
     chat_repo.add_message(session_id, "assistant", answer)
     updated_messages = chat_repo.list_messages(session_id, limit=20)
