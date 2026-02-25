@@ -157,6 +157,7 @@ def dashboard_page(
             "asset_version": _asset_version(),
             "student": student,
             "dashboard": dashboard,
+            "chatbot_context": dashboard.get("chatbot"),
             "error": error,
             "active_section": active_section,
         },
@@ -251,17 +252,18 @@ def chatbot_send(
 ) -> RedirectResponse:
     _student_or_404(student_id)
     active_section = _normalize_dashboard_section(section, "doubtbot")
+    chat_anchor = "doubtbot-widget"
     try:
         chatbot_service.ask_question(student_id, question)
     except ValueError as error:
         escaped = quote_plus(str(error))
         return RedirectResponse(
-            url=f"/students/{student_id}/dashboard?section={active_section}&error={escaped}#chatbot",
+            url=f"/students/{student_id}/dashboard?section={active_section}&error={escaped}#{chat_anchor}",
             status_code=303,
         )
 
     return RedirectResponse(
-        url=f"/students/{student_id}/dashboard?section={active_section}#chatbot",
+        url=f"/students/{student_id}/dashboard?section={active_section}#{chat_anchor}",
         status_code=303,
     )
 
@@ -278,6 +280,11 @@ def skill_test_page(request: Request, student_id: int, goal_skill_id: int) -> HT
             status_code=303,
         )
 
+    try:
+        chatbot_context = chatbot_service.get_chat_panel(student_id)
+    except ValueError:
+        chatbot_context = None
+
     return templates.TemplateResponse(
         "skill_test.html",
         {
@@ -285,6 +292,7 @@ def skill_test_page(request: Request, student_id: int, goal_skill_id: int) -> HT
             "asset_version": _asset_version(),
             "student": student,
             "assessment": assessment,
+            "chatbot_context": chatbot_context,
             "active_section": "tests",
         },
     )
