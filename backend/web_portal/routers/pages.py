@@ -34,7 +34,6 @@ ALLOWED_DASHBOARD_SECTIONS = {
     "tests",
     "doubtbot",
     "opportunities",
-    "notifications",
 }
 
 

@@ -163,7 +163,8 @@ def list_notifications(student_id: int, limit: int = 30) -> list[dict]:
                 n.is_read,
                 n.created_at,
                 o.title AS opportunity_title,
-                o.company AS opportunity_company
+                o.company AS opportunity_company,
+                o.url AS opportunity_url
             FROM user_notifications n
             LEFT JOIN opportunities o ON o.id = n.related_opportunity_id
             WHERE n.student_id = ?

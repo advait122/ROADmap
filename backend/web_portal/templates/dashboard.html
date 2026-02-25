@@ -479,22 +479,4 @@
 </section>
 {% endif %}
 
-{% if section == "notifications" %}
-<section id="notifications" class="page-card p-4">
-    <h3 class="h5 mb-3">Notifications</h3>
-    {% if dashboard.notifications %}
-        <ul class="list-group">
-            {% for note in dashboard.notifications %}
-                <li class="list-group-item">
-                    <div class="fw-semibold">{{ note.title }}</div>
-                    <div>{{ note.body }}</div>
-                    <div class="small text-muted">{{ note.created_at }}</div>
-                </li>
-            {% endfor %}
-        </ul>
-    {% else %}
-        <p class="text-muted mb-0">No notifications yet.</p>
-    {% endif %}
-</section>
-{% endif %}
 {% endblock %}
