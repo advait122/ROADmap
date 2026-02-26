@@ -7,122 +7,136 @@
 {% block content %}
 {% set section = active_section if active_section else "roadmap" %}
 {% if section == "roadmap" %}
-<section class="page-card goal-card p-4 p-md-5 mb-4">
-    <div class="d-flex flex-wrap justify-content-between gap-3">
-        <div>
-            <h2 class="h4 mb-1">Goal</h2>
-            <p class="text-muted mb-0">{{ dashboard.goal.goal_text }}</p>
-            <p class="small text-muted mb-0">
-                Target Company: {{ dashboard.goal.target_company or "Not clear" }} |
-                Timeline End: {{ dashboard.goal.target_end_date }}
-            </p>
-        </div>
-        <div>
-            <a href="/onboarding" class="btn btn-outline-secondary btn-sm">Create New Goal</a>
-            <form method="post" action="/students/{{ student.id }}/roadmap/replan" class="d-inline ms-2">
-                <button type="submit" class="btn btn-sm replan-btn">Replan Now</button>
-            </form>
-        </div>
-    </div>
-
-    {% if error %}
-        <div class="alert alert-danger mt-3 mb-0">{{ error }}</div>
-    {% endif %}
-    {% if dashboard.replan_info.applied %}
-        <div class="alert alert-warning mt-3 mb-0">
-            Roadmap auto-adjusted because {{ dashboard.replan_info.overdue_task_count }} task(s) were missed.
-            {{ dashboard.replan_info.updated_task_count }} task(s) were rescheduled.
-        </div>
-    {% endif %}
-</section>
-{% endif %}
-
-{% if section != "roadmap" and error %}
-<section class="page-card p-3 mb-4">
-    <div class="alert alert-danger mb-0">{{ error }}</div>
-</section>
-{% endif %}
-
-{% if section == "roadmap" %}
-<section class="row g-4 mb-4">
-    <div class="col-lg-4">
-        <div class="page-card p-4 h-100">
-            <h3 class="h6 mb-3">Progress</h3>
-            <div class="progress-panel">
-                <div
-                    class="progress-ring"
-                    style="--progress-value: {{ '%.2f'|format(dashboard.progress.completion_percent) }};"
-                    aria-label="Task completion progress"
-                >
-                    <div class="progress-ring-center">
-                        <span class="progress-ring-value">{{ dashboard.progress.completed_tasks }}/{{ dashboard.progress.total_tasks }}</span>
-                        <span class="progress-ring-subvalue">tasks</span>
-                    </div>
-                </div>
-                <div class="progress-copy">
-                    <p class="mb-1">Task Completion: <strong>{{ "%.1f"|format(dashboard.progress.completion_percent) }}%</strong></p>
+{% set completed_goal_names = dashboard.goal_skills
+    | selectattr("status", "equalto", "completed")
+    | map(attribute="skill_name")
+    | map("lower")
+    | list
+%}
+<section class="roadmap-view mb-4">
+    <article class="page-card roadmap-hero-card">
+        <div class="roadmap-hero-content">
+            <div class="roadmap-hero-main">
+                <p class="roadmap-hero-kicker">Current Goal</p>
+                <h2 class="roadmap-hero-title">{{ dashboard.goal.goal_text }}</h2>
+                <div class="roadmap-hero-meta">
+                    <span class="roadmap-hero-meta-item">
+                        <svg class="roadmap-meta-icon" viewBox="0 0 24 24" aria-hidden="true">
+                            <rect x="3.5" y="4.5" width="17" height="16" rx="2.4"></rect>
+                            <line x1="8" y1="3" x2="8" y2="7"></line>
+                            <line x1="16" y1="3" x2="16" y2="7"></line>
+                            <line x1="3.5" y1="9" x2="20.5" y2="9"></line>
+                            <rect x="7.1" y="11.8" width="2.4" height="2.4" rx="0.45"></rect>
+                            <rect x="10.8" y="11.8" width="2.4" height="2.4" rx="0.45"></rect>
+                            <rect x="14.5" y="11.8" width="2.4" height="2.4" rx="0.45"></rect>
+                        </svg>
+                        Target: {{ dashboard.goal_target_date_display }}
+                    </span>
+                    {% if dashboard.goal_months_remaining is not none %}
+                        <span class="roadmap-hero-meta-item">
+                            <svg class="roadmap-meta-icon" viewBox="0 0 24 24" aria-hidden="true">
+                                <path d="M7 3.5h10"></path>
+                                <path d="M7 20.5h10"></path>
+                                <path d="M8.2 3.5v3.2c0 1.8.98 3.45 2.58 4.37L12 11.75l1.22-.68c1.6-.92 2.58-2.57 2.58-4.37V3.5"></path>
+                                <path d="M8.2 20.5v-3.2c0-1.8.98-3.45 2.58-4.37L12 12.25l1.22.68c1.6.92 2.58 2.57 2.58 4.37v3.2"></path>
+                            </svg>
+                            {{ dashboard.goal_months_remaining }} month{% if dashboard.goal_months_remaining != 1 %}s{% endif %} remaining
+                        </span>
+                    {% endif %}
                 </div>
             </div>
+            <div class="roadmap-hero-side">
+                <div class="roadmap-hero-status">Active Goal</div>
+            </div>
         </div>
-    </div>
-    <div class="col-lg-8">
-        <div class="page-card p-4 h-100">
-            <h3 class="h6 mb-3">Skill Gap</h3>
+
+        {% if error %}
+            <div class="alert alert-danger mt-3 mb-0">{{ error }}</div>
+        {% endif %}
+        {% if dashboard.replan_info.applied %}
+            <div class="alert alert-warning mt-3 mb-0">
+                Roadmap auto-adjusted because {{ dashboard.replan_info.overdue_task_count }} task(s) were missed.
+                {{ dashboard.replan_info.updated_task_count }} task(s) were rescheduled.
+            </div>
+        {% endif %}
+    </article>
+
+    <section class="roadmap-top-grid">
+        <article class="page-card roadmap-progress-card-dark">
+            <h3 class="roadmap-progress-heading">Progress</h3>
+            <div class="roadmap-progress-body">
+                <div class="roadmap-progress-ring" style="--progress-value: {{ '%.2f'|format(dashboard.progress.completion_percent) }};">
+                    <div class="roadmap-progress-ring-center">
+                        <span class="roadmap-progress-ring-main">{{ dashboard.progress.completed_tasks }}</span>
+                        <span class="roadmap-progress-ring-sub">of {{ dashboard.progress.total_tasks }}</span>
+                    </div>
+                </div>
+                <div class="roadmap-progress-copy">
+                    <p class="roadmap-progress-percent">{{ "%.0f"|format(dashboard.progress.completion_percent) }}%</p>
+                    <p class="roadmap-progress-label">Task Completion</p>
+                    <div class="roadmap-progress-track">
+                        <div class="roadmap-progress-fill" style="--progress-value: {{ '%.2f'|format(dashboard.progress.completion_percent) }};"></div>
+                    </div>
+                </div>
+            </div>
+        </article>
+
+        <article class="page-card roadmap-panel-card">
+            <h3 class="roadmap-panel-ribbon">Skill Gap</h3>
             {% if dashboard.goal_skills %}
-                <div class="skills-list">
+                <div class="roadmap-chip-list">
                     {% for skill in dashboard.goal_skills %}
-                        <span class="skill-pill">
+                        <span class="roadmap-chip
+                            {% if skill.status == 'completed' %}is-completed{% endif %}
+                            {% if skill.is_locked %}is-locked{% endif %}
+                        ">
+                            {% if skill.is_locked %}<span class="roadmap-chip-icon" aria-hidden="true">&#128274;</span>{% endif %}
                             {{ skill.skill_name }}
-                            {% if skill.status == "completed" %}
-                                (Done)
-                            {% elif skill.is_active %}
-                                (Current Skill)
-                            {% elif skill.ready_for_test %}
-                                (Test Ready)
-                            {% elif skill.is_locked %}
-                                (Locked)
-                            {% else %}
-                                ({{ skill.status.replace("_", " ") }})
-                            {% endif %}
+                            {% if skill.status == "completed" %}<span class="roadmap-chip-icon roadmap-chip-check" aria-hidden="true">&#10003;</span>{% endif %}
                         </span>
                     {% endfor %}
                 </div>
             {% else %}
                 <div class="alert alert-success mb-0">You currently meet all extracted requirements.</div>
             {% endif %}
-        </div>
-    </div>
-</section>
+        </article>
 
-<section class="row g-4 mb-4">
-    <div class="col-lg-6">
-        <div class="page-card p-4 h-100">
-            <h3 class="h6 mb-3">Required Skills (LLM + Opportunity Data)</h3>
+        <article class="page-card roadmap-panel-card">
+            <h3 class="roadmap-panel-ribbon">Required Skills (LLM + Opportunity)</h3>
             {% if dashboard.required_skills %}
-                <div class="skills-list">
+                <div class="roadmap-chip-list">
                     {% for skill in dashboard.required_skills %}
-                        <span class="skill-pill">{{ skill }}</span>
+                        <span class="roadmap-chip">{{ skill }}</span>
                     {% endfor %}
                 </div>
             {% else %}
                 <p class="text-muted mb-0">No required skills extracted.</p>
             {% endif %}
-        </div>
-    </div>
-    <div class="col-lg-6">
-        <div class="page-card p-4 h-100">
-            <h3 class="h6 mb-3">Your Current Skills</h3>
-            {% if dashboard.known_skills %}
-                <div class="skills-list">
-                    {% for skill in dashboard.known_skills %}
-                        <span class="skill-pill">{{ skill }}</span>
-                    {% endfor %}
-                </div>
-            {% else %}
-                <p class="text-muted mb-0">No profile skills found.</p>
-            {% endif %}
-        </div>
-    </div>
+        </article>
+    </section>
+
+    <article class="page-card roadmap-panel-card roadmap-current-card">
+        <h3 class="roadmap-panel-ribbon">Your Current Skills</h3>
+        {% if dashboard.known_skills %}
+            <div class="roadmap-chip-list">
+                {% for skill in dashboard.known_skills %}
+                    {% set skill_key = skill | lower %}
+                    <span class="roadmap-chip {% if skill_key in completed_goal_names %}is-completed{% endif %}">
+                        {{ skill }}
+                        {% if skill_key in completed_goal_names %}<span class="roadmap-chip-icon roadmap-chip-check" aria-hidden="true">&#10003;</span>{% endif %}
+                    </span>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-muted mb-0">No profile skills found.</p>
+        {% endif %}
+    </article>
+</section>
+{% endif %}
+
+{% if section != "roadmap" and error %}
+<section class="page-card p-3 mb-4">
+    <div class="alert alert-danger mb-0">{{ error }}</div>
 </section>
 {% endif %}
 
