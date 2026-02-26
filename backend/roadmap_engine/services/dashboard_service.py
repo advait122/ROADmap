@@ -3,7 +3,7 @@ import json
 import re
 
 from backend.roadmap_engine.storage import goals_repo, roadmap_repo, students_repo
-from backend.roadmap_engine.utils import utc_today
+from backend.roadmap_engine.utils import parse_iso_deadline, utc_today
 
 
 def _assert_student(student_id: int) -> dict:
@@ -46,6 +46,23 @@ def _task_progress(tasks: list[dict]) -> dict:
 def _active_skill(goal_skills: list[dict]) -> dict | None:
     pending = [item for item in goal_skills if item["status"] != "completed"]
     return pending[0] if pending else None
+
+
+def _goal_months_remaining(target_end_date: str | None, today) -> int | None:
+    target_end = parse_iso_deadline(target_end_date)
+    if target_end is None:
+        return None
+    days_remaining = max((target_end - today).days, 0)
+    if days_remaining == 0:
+        return 0
+    return max(1, round(days_remaining / 30))
+
+
+def _format_goal_target_date(target_end_date: str | None) -> str:
+    target_end = parse_iso_deadline(target_end_date)
+    if target_end is None:
+        return (target_end_date or "Not set").strip() or "Not set"
+    return target_end.strftime(f"%B {target_end.day}, %Y")
 
 
 def _humanize_summary_value(value: object) -> str:
@@ -232,6 +249,8 @@ def get_dashboard(student_id: int) -> dict:
         plan = roadmap_repo.get_active_plan(goal["id"]) or plan
 
     today = utc_today()
+    months_remaining = _goal_months_remaining(goal.get("target_end_date"), today)
+    goal_target_date_display = _format_goal_target_date(goal.get("target_end_date"))
     all_tasks = roadmap_repo.list_tasks(plan["id"])
     all_window_tasks = roadmap_repo.list_tasks(plan["id"], today.isoformat(), None)
     goal_skills = goals_repo.list_goal_skills(goal["id"])
@@ -284,6 +303,8 @@ def get_dashboard(student_id: int) -> dict:
     return {
         "student": student,
         "goal": goal,
+        "goal_months_remaining": months_remaining,
+        "goal_target_date_display": goal_target_date_display,
         "plan": plan,
         "today": today.isoformat(),
         "known_skills": [item["skill_name"] for item in profile_skills],

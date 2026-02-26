@@ -220,9 +220,10 @@
                             id="profilePanel"
                             aria-hidden="true"
                         >
-                            <p class="profile-panel-line"><span class="profile-label">Name:</span> {{ student.name }}</p>
+                            <p class="profile-panel-name">{{ student.name }}</p>
                             <p class="profile-panel-line"><span class="profile-label">Branch:</span> {{ student.branch }}</p>
                             <p class="profile-panel-line"><span class="profile-label">Year:</span> {{ student.current_year }}{{ year_suffix }} Year</p>
+                            <a href="/onboarding" class="btn btn-sm btn-outline-secondary profile-action-btn">Create New Plan</a>
                         </div>
                     </div>
                 </div>
