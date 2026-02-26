@@ -754,6 +754,21 @@ body.summary-modal-open {
     justify-self: end;
 }
 
+.ribbon-company-link {
+    color: #fff;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: 0;
+}
+
+.ribbon-company-link:hover,
+.ribbon-company-link:focus {
+    color: #e2a54d;
+    text-decoration: none;
+}
+
 .notification-shell {
     position: relative;
 }
@@ -1249,6 +1264,16 @@ body:not(.onboarding-page)::before {
     transform: scale(1.02);
     z-index: -1;
     pointer-events: none;
+}
+
+body.dashboard-page::before {
+    background-color: #f4f4f4;
+    background-image: url("/static/photos/science-doodle-exact.jpg");
+    background-size: 460px auto;
+    background-repeat: repeat;
+    background-position: center top;
+    filter: blur(0);
+    transform: none;
 }
 
 body:not(.onboarding-page) main.container {

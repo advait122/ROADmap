@@ -238,7 +238,12 @@ def get_dashboard(student_id: int) -> dict:
     active_skill = _active_skill(goal_skills)
 
     # lazy imports to avoid circular references
-    from backend.roadmap_engine.services import chatbot_service, matching_service, youtube_learning_service
+    from backend.roadmap_engine.services import (
+        chatbot_service,
+        company_service,
+        matching_service,
+        youtube_learning_service,
+    )
 
     matches = matching_service.refresh_opportunity_matches(student_id)
     forecast_7_days = matching_service.forecast_eligible_in_days(student_id, days=7)
@@ -265,6 +270,7 @@ def get_dashboard(student_id: int) -> dict:
             ready_for_test_ids.add(active_skill["id"])
 
     chatbot_panel = chatbot_service.get_chat_panel(student_id)
+    company_job_invites = company_service.list_student_pending_company_jobs(student_id)
 
     today_tasks = [
         task for task in all_window_tasks
@@ -303,6 +309,7 @@ def get_dashboard(student_id: int) -> dict:
         "playlist_recommendation_error": playlist_recommendation_error,
         "selected_playlist": selected_playlist,
         "chatbot": chatbot_panel,
+        "company_job_invites": company_job_invites,
     }
 
 

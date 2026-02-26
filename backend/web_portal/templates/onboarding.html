@@ -141,7 +141,9 @@
 
         const panes = Array.from(form.querySelectorAll(".step-pane"));
         const dots = Array.from(document.querySelectorAll("[data-step-dot]"));
+        const ribbonCompanyBtn = document.getElementById("ribbonCompanyBtn");
         let currentStep = 1;
+        let hideCompanyRibbonButton = false;
 
         function initGlassSelects() {
             const selects = Array.from(form.querySelectorAll("select.onboarding-input"));
@@ -259,6 +261,13 @@
                 const dotStep = Number(dot.getAttribute("data-step-dot"));
                 dot.classList.toggle("active", dotStep <= currentStep);
             });
+
+            if (currentStep > 1) {
+                hideCompanyRibbonButton = true;
+            }
+            if (ribbonCompanyBtn) {
+                ribbonCompanyBtn.style.display = hideCompanyRibbonButton ? "none" : "inline-flex";
+            }
         }
 
         function validateStep(step) {
@@ -321,6 +330,7 @@
         });
 
         initGlassSelects();
+        setStep(1);
     })();
 </script>
 {% endblock %}

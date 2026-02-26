@@ -12,7 +12,11 @@
     {% set chat_ctx = chatbot_context if chatbot_context is defined else (dashboard.chatbot if dashboard is defined else None) %}
     <nav class="navbar navbar-expand-lg bg-white border-bottom mb-4">
         <div class="container">
-            <a href="/" class="navbar-brand fw-semibold text-decoration-none">CodeMap</a>
+            {% set brand_href = "/" %}
+            {% if company is defined and company and not student %}
+                {% set brand_href = "/company/dashboard" %}
+            {% endif %}
+            <a href="{{ brand_href }}" class="navbar-brand fw-semibold text-decoration-none">CodeMap</a>
             {% if student %}
                 {% set dashboard_url = "/students/" ~ student.id ~ "/dashboard" %}
                 {% set current_section = active_section if active_section else "roadmap" %}
@@ -221,6 +225,17 @@
                             <p class="profile-panel-line"><span class="profile-label">Year:</span> {{ student.current_year }}{{ year_suffix }} Year</p>
                         </div>
                     </div>
+                </div>
+            {% elif request.url.path == "/onboarding" %}
+                <div class="ribbon-nav" aria-hidden="true"></div>
+                <div class="topbar-actions">
+                    <a
+                        id="ribbonCompanyBtn"
+                        href="/company/auth"
+                        class="ribbon-company-link"
+                    >
+                        Login as Company
+                    </a>
                 </div>
             {% endif %}
         </div>

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Finalize Job | CodeMap{% endblock %}
+{% block body_class %}onboarding-page company-page{% endblock %}
+{% block page_styles %}
+<link href="/static/css/onboarding.css?v={{ asset_version }}" rel="stylesheet">
+<link href="/static/css/company.css?v={{ asset_version }}" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<section class="setup-shell">
+    <div class="setup-card">
+        <div class="setup-left">
+            <div class="art-layer"></div>
+            <div class="setup-copy">
+                <h3>Finalize Criteria</h3>
+                <p>Step 2 of 2: shortlist constraints and deadline.</p>
+            </div>
+        </div>
+
+        <div class="setup-right">
+            <div class="company-header-row">
+                <div>
+                    <h2 class="setup-title">Job Setup</h2>
+                    <p class="setup-subtitle mb-0">Logged in as <strong>{{ company.username }}</strong></p>
+                </div>
+            </div>
+
+            <div class="step-tracker mt-3">
+                <span class="tracker-dot active"></span>
+                <span class="tracker-dot active"></span>
+            </div>
+
+            {% if error %}
+                <div class="alert alert-danger mb-3">{{ error }}</div>
+            {% endif %}
+
+            <div class="company-summary-card mb-3">
+                <h3 class="company-summary-title">Role Snapshot</h3>
+                <p class="mb-2">{{ draft.job_description }}</p>
+                <div class="skill-bubbles">
+                    {% for skill in required_skill_labels %}
+                        <span class="skill-bubble">{{ skill }}</span>
+                    {% endfor %}
+                </div>
+                <p class="company-summary-line mb-0 mt-2">
+                    Active backlog allowed:
+                    <strong>{% if draft.allow_active_backlog %}Yes{% else %}No{% endif %}</strong>
+                </p>
+            </div>
+
+            <form method="post" action="/company/job/create">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">Min CGPA Required</label>
+                        <input
+                            type="number"
+                            name="min_cgpa"
+                            class="form-control onboarding-input"
+                            min="0"
+                            max="10"
+                            step="0.1"
+                            value="7.0"
+                            required
+                        >
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label">Application Deadline</label>
+                        <input
+                            type="date"
+                            name="application_deadline"
+                            class="form-control onboarding-input"
+                            required
+                        >
+                    </div>
+                </div>
+
+                <div class="step-actions mt-4">
+                    <a href="/company/job/create/step1" class="btn btn-outline-secondary step-btn">Back</a>
+                    <button type="submit" class="btn btn-primary step-btn">Create Job</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

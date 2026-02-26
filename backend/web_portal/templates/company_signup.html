@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Company Sign Up | CodeMap{% endblock %}
+{% block body_class %}onboarding-page company-page{% endblock %}
+{% block page_styles %}
+<link href="/static/css/onboarding.css?v={{ asset_version }}" rel="stylesheet">
+<link href="/static/css/company.css?v={{ asset_version }}" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<section class="setup-shell">
+    <div class="setup-card">
+        <div class="setup-left">
+            <div class="art-layer"></div>
+            <div class="setup-copy">
+                <h3>Create Company Account</h3>
+                <p>Set up your company workspace to post jobs and shortlist students.</p>
+            </div>
+        </div>
+
+        <div class="setup-right">
+            <h2 class="setup-title">Company Sign Up</h2>
+            <p class="setup-subtitle">Create account first, then continue to job setup.</p>
+
+            {% if error %}
+                <div class="alert alert-danger mb-3">{{ error }}</div>
+            {% endif %}
+
+            <section class="company-auth-card company-auth-card-single">
+                <h3 class="company-auth-title">Sign Up</h3>
+                <form method="post" action="/company/signup">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input
+                            type="text"
+                            name="username"
+                            class="form-control onboarding-input"
+                            required
+                        >
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input
+                            type="password"
+                            name="password"
+                            class="form-control onboarding-input"
+                            required
+                        >
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Confirm Password</label>
+                        <input
+                            type="password"
+                            name="confirm_password"
+                            class="form-control onboarding-input"
+                            required
+                        >
+                    </div>
+                    <div class="company-auth-actions">
+                        <button type="submit" class="btn btn-primary step-btn">Create Account</button>
+                        <a href="/company/auth" class="btn btn-outline-secondary step-btn">Back to Login</a>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </div>
+</section>
+{% endblock %}

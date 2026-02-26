@@ -142,6 +142,57 @@ BASE_TABLE_STATEMENTS = [
     );
     """,
     """
+    CREATE TABLE IF NOT EXISTS company_accounts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT NOT NULL UNIQUE,
+        password_hash TEXT NOT NULL,
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS company_job_posts (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        company_id INTEGER NOT NULL,
+        title TEXT NOT NULL,
+        job_description TEXT NOT NULL,
+        required_skills_json TEXT NOT NULL,
+        allow_active_backlog INTEGER NOT NULL DEFAULT 1,
+        min_cgpa REAL NOT NULL,
+        shortlist_count INTEGER NOT NULL,
+        application_deadline TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'open',
+        created_at TEXT NOT NULL,
+        updated_at TEXT NOT NULL,
+        FOREIGN KEY(company_id) REFERENCES company_accounts(id) ON DELETE CASCADE
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS company_job_applications (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        job_id INTEGER NOT NULL,
+        student_id INTEGER NOT NULL,
+        status TEXT NOT NULL,
+        invited_at TEXT NOT NULL,
+        acted_at TEXT,
+        updated_at TEXT NOT NULL,
+        UNIQUE(job_id, student_id),
+        FOREIGN KEY(job_id) REFERENCES company_job_posts(id) ON DELETE CASCADE,
+        FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
+    );
+    """,
+    """
+    CREATE TABLE IF NOT EXISTS company_job_shortlists (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        job_id INTEGER NOT NULL,
+        student_id INTEGER NOT NULL,
+        created_at TEXT NOT NULL,
+        UNIQUE(job_id, student_id),
+        FOREIGN KEY(job_id) REFERENCES company_job_posts(id) ON DELETE CASCADE,
+        FOREIGN KEY(student_id) REFERENCES students(id) ON DELETE CASCADE
+    );
+    """,
+    """
     CREATE TABLE IF NOT EXISTS playlist_recommendations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         goal_id INTEGER NOT NULL,
@@ -217,6 +268,10 @@ INDEX_STATEMENTS = [
     "CREATE INDEX IF NOT EXISTS idx_plan_tasks_plan_date ON roadmap_plan_tasks(plan_id, task_date);",
     "CREATE INDEX IF NOT EXISTS idx_notifications_student_read ON user_notifications(student_id, is_read);",
     "CREATE INDEX IF NOT EXISTS idx_opportunity_match_goal_bucket ON opportunity_match_cache(goal_id, bucket);",
+    "CREATE INDEX IF NOT EXISTS idx_company_jobs_company_status ON company_job_posts(company_id, status);",
+    "CREATE INDEX IF NOT EXISTS idx_company_applications_job_status ON company_job_applications(job_id, status);",
+    "CREATE INDEX IF NOT EXISTS idx_company_applications_student_status ON company_job_applications(student_id, status);",
+    "CREATE INDEX IF NOT EXISTS idx_company_shortlists_job ON company_job_shortlists(job_id);",
     "CREATE INDEX IF NOT EXISTS idx_selected_playlist_skill ON goal_skill_selected_playlists(goal_skill_id);",
     "CREATE INDEX IF NOT EXISTS idx_chat_sessions_student_skill ON skill_playlist_chat_sessions(student_id, goal_skill_id);",
     "CREATE INDEX IF NOT EXISTS idx_chat_messages_session_id ON skill_playlist_chat_messages(session_id, id);",

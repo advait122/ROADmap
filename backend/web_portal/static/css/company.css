@@ -1,0 +1,152 @@
+.company-page .setup-left {
+    min-height: 420px;
+}
+
+.company-page .setup-right {
+    padding: 1.7rem 1.85rem 1.45rem;
+}
+
+.company-page .setup-title {
+    font-size: 1.75rem;
+}
+
+.company-page .setup-subtitle {
+    margin-bottom: 0.7rem;
+}
+
+.company-auth-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.9rem;
+}
+
+.company-auth-card {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+}
+
+.company-auth-card-single {
+    max-width: 540px;
+}
+
+.company-auth-title {
+    font-size: 1.02rem;
+    font-weight: 800;
+    margin: 0 0 0.6rem;
+}
+
+.company-auth-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin-top: 0.7rem;
+}
+
+.company-auth-actions .step-btn {
+    width: auto;
+    height: 44px;
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1;
+    padding-top: 0;
+    padding-bottom: 0;
+    text-decoration: none;
+}
+
+.company-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.8rem;
+}
+
+.company-toggle-group {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+}
+
+.company-toggle-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border: 1px solid rgba(209, 99, 0, 0.45);
+    border-radius: 999px;
+    background: rgba(246, 179, 40, 0.2);
+    color: #5f3510;
+    padding: 0.35rem 0.74rem;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.84rem;
+}
+
+.company-toggle-pill input {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #d16300;
+    background: transparent;
+    margin: 0;
+}
+
+.company-toggle-pill input:checked {
+    background: #e77717;
+    box-shadow: 0 0 0 2px rgba(231, 119, 23, 0.2);
+}
+
+.company-summary-card {
+    border: 1px solid rgba(18, 57, 90, 0.2);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.72);
+    padding: 0.85rem;
+}
+
+.company-summary-title {
+    font-size: 0.96rem;
+    margin: 0 0 0.45rem;
+    font-weight: 800;
+}
+
+.company-summary-line {
+    font-size: 0.86rem;
+}
+
+.company-dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.8rem;
+}
+
+.company-dashboard-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.45rem;
+}
+
+@media (max-width: 991px) {
+    .company-auth-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .company-header-row,
+    .company-dashboard-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .company-auth-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .company-auth-actions .step-btn {
+        width: 100%;
+    }
+}

@@ -115,6 +115,15 @@
     overflow: visible;
 }
 
+.company-login-btn {
+    min-height: 0 !important;
+    border-radius: 999px !important;
+    padding: 0.34rem 0.88rem !important;
+    font-size: 0.78rem !important;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+}
+
 .setup-title {
     margin: 0;
     color: var(--text);
@@ -398,6 +407,12 @@
 
 .step-btn {
     min-width: 180px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    line-height: 1;
+    vertical-align: middle;
 }
 
 .skill-bubbles {

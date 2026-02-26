@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Company Access | CodeMap{% endblock %}
+{% block body_class %}onboarding-page company-page{% endblock %}
+{% block page_styles %}
+<link href="/static/css/onboarding.css?v={{ asset_version }}" rel="stylesheet">
+<link href="/static/css/company.css?v={{ asset_version }}" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<section class="setup-shell">
+    <div class="setup-card">
+        <div class="setup-left">
+            <div class="art-layer"></div>
+            <div class="setup-copy">
+                <h3>Company Console</h3>
+                <p>Find the right students based on skills, test scores, and consistency.</p>
+            </div>
+        </div>
+
+        <div class="setup-right">
+            <h2 class="setup-title">Login as Company</h2>
+            <p class="setup-subtitle">Sign in to post roles and shortlist top candidates.</p>
+
+            {% if error %}
+                <div class="alert alert-danger mb-3">{{ error }}</div>
+            {% endif %}
+
+            <section class="company-auth-card company-auth-card-single">
+                <h3 class="company-auth-title">Login</h3>
+                <form method="post" action="/company/login">
+                    <div class="mb-3">
+                        <label class="form-label">Username</label>
+                        <input
+                            type="text"
+                            name="username"
+                            class="form-control onboarding-input"
+                            required
+                        >
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Password</label>
+                        <input
+                            type="password"
+                            name="password"
+                            class="form-control onboarding-input"
+                            required
+                        >
+                    </div>
+                    <div class="company-auth-actions">
+                        <button type="submit" class="btn btn-primary step-btn">Login</button>
+                        <a href="/company/signup" class="btn btn-outline-secondary step-btn">Sign Up</a>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </div>
+</section>
+{% endblock %}

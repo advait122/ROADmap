@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Create Job | CodeMap{% endblock %}
+{% block body_class %}onboarding-page company-page{% endblock %}
+{% block page_styles %}
+<link href="/static/css/onboarding.css?v={{ asset_version }}" rel="stylesheet">
+<link href="/static/css/company.css?v={{ asset_version }}" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<section class="setup-shell">
+    <div class="setup-card">
+        <div class="setup-left">
+            <div class="art-layer"></div>
+            <div class="setup-copy">
+                <h3>Create Job</h3>
+                <p>Step 1 of 2: add role requirements and key skill filters.</p>
+            </div>
+        </div>
+
+        <div class="setup-right">
+            <div class="company-header-row">
+                <div>
+                    <h2 class="setup-title">Company Job Setup</h2>
+                    <p class="setup-subtitle mb-0">Logged in as <strong>{{ company.username }}</strong></p>
+                </div>
+            </div>
+
+            <div class="step-tracker mt-3">
+                <span class="tracker-dot active"></span>
+                <span class="tracker-dot"></span>
+            </div>
+
+            {% if error %}
+                <div class="alert alert-danger mb-3">{{ error }}</div>
+            {% endif %}
+
+            <form method="post" action="/company/job/create/step1">
+                <label class="form-label">Required Skills</label>
+                <div class="skill-bubbles mb-3">
+                    {% set draft_required = draft.required_skills if draft and draft.required_skills else [] %}
+                    {% for skill in predefined_skills %}
+                        <div class="skill-option">
+                            <input
+                                class="skill-check"
+                                type="checkbox"
+                                name="selected_skills"
+                                value="{{ skill }}"
+                                id="company_skill_{{ loop.index }}"
+                                {% if skill | lower in draft_required %}checked{% endif %}
+                            >
+                            <label class="skill-bubble" for="company_skill_{{ loop.index }}">{{ skill }}</label>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Add Other Required Skills (optional)</label>
+                    <textarea
+                        name="custom_required_skills"
+                        class="form-control onboarding-input"
+                        rows="3"
+                        placeholder="Example: Flask, React, Computer Networks"
+                    ></textarea>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label">Job Description</label>
+                    <textarea
+                        name="job_description"
+                        class="form-control onboarding-input"
+                        rows="5"
+                        placeholder="Describe role, responsibilities, and expected outcomes."
+                        required
+                    >{{ draft.job_description if draft else "" }}</textarea>
+                </div>
+
+                <div class="mb-4">
+                    <label class="form-label d-block">Active Backlog Allowed?</label>
+                    {% set allow_backlog = true if not draft else draft.allow_active_backlog %}
+                    <div class="company-toggle-group">
+                        <label class="company-toggle-pill">
+                            <input type="radio" name="active_backlog" value="yes" {% if allow_backlog %}checked{% endif %}>
+                            <span>Yes</span>
+                        </label>
+                        <label class="company-toggle-pill">
+                            <input type="radio" name="active_backlog" value="no" {% if not allow_backlog %}checked{% endif %}>
+                            <span>No</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="step-actions">
+                    <a href="/company/dashboard" class="btn btn-outline-secondary step-btn">Go to Dashboard</a>
+                    <button type="submit" class="btn btn-primary step-btn">Continue</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

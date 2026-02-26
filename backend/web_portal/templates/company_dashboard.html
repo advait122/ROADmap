@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+{% block title %}Company Dashboard | CodeMap{% endblock %}
+{% block body_class %}dashboard-page company-page{% endblock %}
+{% block page_styles %}
+<link href="/static/css/company.css?v={{ asset_version }}" rel="stylesheet">
+{% endblock %}
+{% block content %}
+<section class="page-card p-4 mb-4">
+    <div class="company-dashboard-header">
+        <div>
+            <h2 class="h4 mb-1">Company Dashboard</h2>
+            <p class="text-muted mb-0">Welcome, <strong>{{ company.username }}</strong></p>
+        </div>
+        <div class="company-dashboard-actions">
+            <a href="/company/job/create/step1" class="btn btn-sm replan-btn">Create New Job</a>
+            <form method="post" action="/company/logout" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">Logout</button>
+            </form>
+        </div>
+    </div>
+
+    {% if error %}
+        <div class="alert alert-danger mt-3 mb-0">{{ error }}</div>
+    {% endif %}
+</section>
+
+<section class="page-card p-4 mb-4">
+    <form method="get" action="/company/dashboard" class="row g-3 align-items-end">
+        <div class="col-md-6">
+            <label class="form-label">Job</label>
+            <select class="form-select" name="job_id" required>
+                {% for job in company_dashboard.jobs %}
+                    <option
+                        value="{{ job.id }}"
+                        {% if job.id == company_dashboard.active_job.id %}selected{% endif %}
+                    >
+                        {{ job.title }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Top Students</label>
+            <select class="form-select" name="top">
+                {% for option in company_dashboard.top_options %}
+                    <option value="{{ option }}" {% if option == company_dashboard.top_filter %}selected{% endif %}>
+                        Top {{ option }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3">
+            <button class="btn btn-primary w-100" type="submit">Apply Filter</button>
+        </div>
+    </form>
+
+    <hr>
+    <h3 class="h6 mb-2">{{ company_dashboard.active_job.title }}</h3>
+    <p class="mb-2">{{ company_dashboard.active_job.job_description }}</p>
+    <div class="skill-bubbles mb-2">
+        {% for skill in company_dashboard.active_job.required_skill_labels %}
+            <span class="skill-bubble">{{ skill }}</span>
+        {% endfor %}
+    </div>
+    <p class="small text-muted mb-0">
+        Min CGPA: <strong>{{ "%.1f"|format(company_dashboard.active_job.min_cgpa) }}</strong> |
+        Active backlog allowed:
+        <strong>{% if company_dashboard.active_job.allow_active_backlog == 1 %}Yes{% else %}No{% endif %}</strong> |
+        Application deadline: <strong>{{ company_dashboard.active_job.application_deadline }}</strong>
+    </p>
+    <p class="small text-muted mb-0">
+        Eligible students: <strong>{{ company_dashboard.eligible_count }}</strong> |
+        Pending: <strong>{{ company_dashboard.status_counts.pending }}</strong> |
+        Applied: <strong>{{ company_dashboard.status_counts.applied }}</strong> |
+        Declined: <strong>{{ company_dashboard.status_counts.declined }}</strong>
+    </p>
+    {% if company_dashboard.using_demo_data %}
+        <div class="alert alert-info mt-2 mb-0">
+            No real students matched this criteria yet. Showing simulated candidates so you can test the dashboard.
+        </div>
+    {% endif %}
+</section>
+
+<section class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="page-card p-4 h-100">
+            <h3 class="h5 mb-3">Top Eligible Students</h3>
+            {% if company_dashboard.top_candidates %}
+                <div class="table-responsive">
+                    <table class="table align-middle">
+                        <thead>
+                            <tr>
+                                <th>Student</th>
+                                <th>Skills</th>
+                                <th>Test Score</th>
+                                <th>Regularity</th>
+                                <th>CGPA</th>
+                                <th>Status</th>
+                                <th>Final Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for candidate in company_dashboard.top_candidates %}
+                                <tr>
+                                    <td>
+                                        <div class="fw-semibold">{{ candidate.student_name }}</div>
+                                        <div class="small text-muted">{{ candidate.branch }} | Year {{ candidate.current_year }}</div>
+                                    </td>
+                                    <td>{{ candidate.matched_skills | join(", ") }}</td>
+                                    <td>{{ "%.1f"|format(candidate.cumulative_test_score) }}</td>
+                                    <td>{{ "%.1f"|format(candidate.regularity_rating) }}</td>
+                                    <td>{{ "%.2f"|format(candidate.cgpa) }}</td>
+                                    <td class="text-capitalize">{{ candidate.application_status }}</td>
+                                    <td>
+                                        <strong>{{ "%.1f"|format(candidate.final_score) }}</strong>
+                                        <div class="small text-muted">{{ candidate.metrics_source }}</div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted mb-0">No students match this criteria yet.</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="page-card p-4 h-100">
+            <h3 class="h5 mb-3">Selected Students</h3>
+            {% if company_dashboard.selected_students %}
+                <ul class="list-group">
+                    {% for item in company_dashboard.selected_students %}
+                        <li class="list-group-item">
+                            <div class="fw-semibold">{{ item.student_name }}</div>
+                            {% if item.final_score is not none %}
+                                <div class="small text-muted">
+                                    Final: {{ "%.1f"|format(item.final_score) }},
+                                    Test: {{ "%.1f"|format(item.cumulative_test_score) }},
+                                    Rating: {{ "%.1f"|format(item.regularity_rating) }}
+                                </div>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted mb-0">No shortlisted students yet.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<section class="page-card p-4 mb-4">
+    <h3 class="h5 mb-3">Applied Students (Select for Shortlist)</h3>
+    {% if company_dashboard.applied_candidates %}
+        <form method="post" action="/company/jobs/{{ company_dashboard.active_job.id }}/shortlist?top={{ company_dashboard.top_filter }}">
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th></th>
+                            <th>Student</th>
+                            <th>Test Score</th>
+                            <th>Regularity</th>
+                            <th>Final Score</th>
+                            <th>Shortlisted</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for candidate in company_dashboard.applied_candidates %}
+                            <tr>
+                                <td>
+                                    {% if not candidate.is_shortlisted %}
+                                        <input
+                                            class="form-check-input"
+                                            type="checkbox"
+                                            name="selected_student_ids"
+                                            value="{{ candidate.student_id }}"
+                                        >
+                                    {% endif %}
+                                </td>
+                                <td>{{ candidate.student_name }}</td>
+                                <td>{{ "%.1f"|format(candidate.cumulative_test_score) }}</td>
+                                <td>{{ "%.1f"|format(candidate.regularity_rating) }}</td>
+                                <td><strong>{{ "%.1f"|format(candidate.final_score) }}</strong></td>
+                                <td>{% if candidate.is_shortlisted %}Yes{% else %}No{% endif %}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <button type="submit" class="btn btn-primary">Shortlist Selected</button>
+        </form>
+    {% else %}
+        <p class="text-muted mb-0">No students have applied yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

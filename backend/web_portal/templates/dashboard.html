@@ -43,6 +43,48 @@
 </section>
 {% endif %}
 
+{% if dashboard.company_job_invites %}
+<section class="page-card p-3 mb-4">
+    <h3 class="h6 mb-3">Company Invitations</h3>
+    <div class="company-invite-grid">
+        {% for invite in dashboard.company_job_invites %}
+            <article class="company-invite-card">
+                <div class="company-invite-head">
+                    <h4 class="company-invite-title mb-0">{{ invite.title }}</h4>
+                    <span class="company-invite-company">{{ invite.company_username }}</span>
+                </div>
+                <p class="company-invite-copy">{{ invite.job_description }}</p>
+                <div class="company-invite-meta">
+                    <span><strong>Skills:</strong> {{ invite.required_skill_labels | join(", ") }}</span>
+                    <span><strong>Min CGPA:</strong> {{ "%.1f"|format(invite.min_cgpa) }}</span>
+                    <span><strong>Deadline:</strong> {{ invite.application_deadline }}</span>
+                </div>
+                {% if invite.deadline_passed %}
+                    <p class="text-danger small mb-0 mt-2">This invitation has expired.</p>
+                {% else %}
+                    <div class="company-invite-actions">
+                        <form
+                            method="post"
+                            action="/students/{{ student.id }}/company-jobs/{{ invite.job_id }}/respond?section={{ section }}"
+                        >
+                            <input type="hidden" name="decision" value="apply">
+                            <button type="submit" class="btn btn-sm replan-btn">Apply</button>
+                        </form>
+                        <form
+                            method="post"
+                            action="/students/{{ student.id }}/company-jobs/{{ invite.job_id }}/respond?section={{ section }}"
+                        >
+                            <input type="hidden" name="decision" value="decline">
+                            <button type="submit" class="btn btn-sm btn-outline-secondary">Decline</button>
+                        </form>
+                    </div>
+                {% endif %}
+            </article>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
 {% if section == "roadmap" %}
 <section class="row g-4 mb-4">
     <div class="col-lg-4">
@@ -137,50 +179,303 @@
 {% endif %}
 
 <section id="tasks" class="page-card p-4 mb-4">
-    <h3 class="h5 mb-3">Today and Upcoming Tasks</h3>
+    <div class="tasks-section-ribbon">Upcoming Tasks</div>
     {% if dashboard.active_skill and not dashboard.selected_playlist %}
         <div class="alert alert-info">
             Select one playlist for <strong>{{ dashboard.active_skill.skill_name }}</strong> first.
             Task completion will unlock after selection.
         </div>
     {% elif dashboard.upcoming_tasks %}
-        <div class="table-responsive">
-            <table class="table align-middle">
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Task</th>
-                        <th>Details</th>
-                        <th>Skill</th>
-                        <th>Target Min</th>
-                        <th>Complete</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for task in dashboard.upcoming_tasks %}
-                    <tr>
-                        <td>{{ task.task_date }}</td>
-                        <td>{{ task.title }}</td>
-                        <td><small>{{ (task.description or "") | replace('\n', '<br>') | safe }}</small></td>
-                        <td>{{ task.skill_name or "-" }}</td>
-                        <td>{{ task.target_minutes }}</td>
-                        <td>
-                            <form method="post" action="/students/{{ student.id }}/tasks/{{ task.id }}/completion?section=tasks">
-                                <input type="hidden" name="is_completed" value="{% if task.is_completed == 1 %}0{% else %}1{% endif %}">
-                                <button type="submit" class="btn btn-sm {% if task.is_completed == 1 %}btn-success{% else %}btn-outline-primary{% endif %}">
-                                    {% if task.is_completed == 1 %}Done{% else %}Mark Done{% endif %}
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
+        <div id="tasksTimeline" class="tasks-timeline">
+            <div class="tasks-timeline-track">
+                {% set open_state = namespace(default_open_done=False) %}
+                {% for task in dashboard.upcoming_tasks %}
+                    {% set date_parts = (task.task_date | string).split('-') %}
+                    {% if date_parts | length == 3 %}
+                        {% set date_label = date_parts[2] ~ '/' ~ date_parts[1] ~ '/' ~ date_parts[0][-2:] %}
+                    {% else %}
+                        {% set date_label = task.task_date %}
+                    {% endif %}
+
+                    {% set details = namespace(url="", watch="", playlist="", channel="", extras=[]) %}
+                    {% for raw_line in (task.description or "").split('\n') %}
+                        {% set line = raw_line.strip() %}
+                        {% if line %}
+                            {% if line.lower().startswith('url:') %}
+                                {% set details.url = line[4:].strip() %}
+                            {% elif line.lower().startswith('watch videos') %}
+                                {% if ':' in line %}
+                                    {% set details.watch = line.split(':', 1)[1].strip() %}
+                                {% else %}
+                                    {% set details.watch = line[12:].strip() %}
+                                {% endif %}
+                            {% elif line.lower().startswith('playlist:') %}
+                                {% set details.playlist = line[9:].strip() %}
+                            {% elif line.lower().startswith('channel:') %}
+                                {% set details.channel = line[8:].strip() %}
+                            {% else %}
+                                {% set _ = details.extras.append(line) %}
+                            {% endif %}
+                        {% endif %}
                     {% endfor %}
-                </tbody>
-            </table>
+
+                    {% set open_default = false %}
+                    {% if not open_state.default_open_done and task.task_date == dashboard.today %}
+                        {% set open_default = true %}
+                        {% set open_state.default_open_done = true %}
+                    {% elif not open_state.default_open_done and loop.first %}
+                        {% set open_default = true %}
+                        {% set open_state.default_open_done = true %}
+                    {% endif %}
+
+                    <article class="task-node{% if open_default %} is-open{% endif %}" data-task-node data-task-id="{{ task.id }}">
+                        <button
+                            type="button"
+                            class="task-date-rect{% if open_default %} is-active{% endif %}{% if task.is_completed == 1 %} is-done{% endif %}"
+                            data-task-toggle
+                            aria-expanded="{{ 'true' if open_default else 'false' }}"
+                            aria-controls="task-card-{{ task.id }}"
+                        >
+                            {{ date_label }}
+                        </button>
+
+                        <section
+                            id="task-card-{{ task.id }}"
+                            class="task-detail-panel{% if open_default %} is-visible{% endif %}"
+                            data-task-panel
+                            {% if not open_default %}hidden{% endif %}
+                        >
+                            <header class="task-detail-header">
+                                <h4 class="task-detail-title mb-0">{{ task.title }}</h4>
+                            </header>
+
+                            <div class="task-detail-body">
+                                <div class="task-detail-topline">
+                                    <span class="task-detail-target"><strong>TARGET:</strong> {{ task.target_minutes }} min</span>
+                                </div>
+
+                                {% if details.watch %}
+                                    <p class="task-detail-row">
+                                        <span class="task-detail-key">WATCH VIDEOS:</span>
+                                        <span class="task-detail-value">{{ details.watch }}</span>
+                                    </p>
+                                {% endif %}
+
+                                {% if details.playlist %}
+                                    <p class="task-detail-row">
+                                        <span class="task-detail-key">PLAYLIST:</span>
+                                        <span class="task-detail-value">{{ details.playlist }}</span>
+                                    </p>
+                                {% endif %}
+
+                                {% if details.channel %}
+                                    <p class="task-detail-row">
+                                        <span class="task-detail-key">CHANNEL:</span>
+                                        <span class="task-detail-value">{{ details.channel }}</span>
+                                    </p>
+                                {% endif %}
+
+                                {% if details.extras %}
+                                    {% for line in details.extras %}
+                                        <p class="task-detail-line">{{ line }}</p>
+                                    {% endfor %}
+                                {% endif %}
+
+                                {% if not details.watch and not details.playlist and not details.channel and not details.extras %}
+                                    <p class="task-detail-line">No details are available for this task.</p>
+                                {% endif %}
+
+                                <div class="task-detail-actions">
+                                    {% if details.url %}
+                                        <a href="{{ details.url }}" target="_blank" rel="noreferrer" class="btn btn-sm replan-btn task-playlist-btn">
+                                            Open Playlist
+                                        </a>
+                                    {% else %}
+                                        <span></span>
+                                    {% endif %}
+
+                                    <form
+                                        method="post"
+                                        action="/students/{{ student.id }}/tasks/{{ task.id }}/completion?section=tasks"
+                                        class="task-detail-action"
+                                        data-task-complete-form
+                                    >
+                                        <input type="hidden" name="is_completed" value="{% if task.is_completed == 1 %}0{% else %}1{% endif %}">
+                                        <button type="submit" class="btn btn-sm {% if task.is_completed == 1 %}btn-success{% else %}btn-outline-primary{% endif %}">
+                                            {% if task.is_completed == 1 %}Done{% else %}Mark Done{% endif %}
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </section>
+                    </article>
+                {% endfor %}
+            </div>
         </div>
     {% else %}
         <p class="text-muted mb-0">No tasks in current window.</p>
     {% endif %}
 </section>
+
+{% if dashboard.upcoming_tasks %}
+<script>
+    (function () {
+        const activeKey = "tasksTimeline.activeTaskId";
+        const timeline = document.getElementById("tasksTimeline");
+        if (!timeline) return;
+
+        const entries = Array.from(timeline.querySelectorAll("[data-task-node]")).map((node) => {
+            return {
+                taskId: node.getAttribute("data-task-id"),
+                node,
+                toggle: node.querySelector("[data-task-toggle]"),
+                panel: node.querySelector("[data-task-panel]"),
+                form: node.querySelector("[data-task-complete-form]"),
+            };
+        }).filter((item) => item.toggle && item.panel && item.taskId);
+
+        if (!entries.length) return;
+
+        function syncOrigin(item) {
+            const { toggle, panel } = item;
+            const panelRect = panel.getBoundingClientRect();
+            const toggleRect = toggle.getBoundingClientRect();
+            if (!panelRect.width || !panelRect.height || !toggleRect.width || !toggleRect.height) return;
+            const originX = toggleRect.left + (toggleRect.width / 2) - panelRect.left;
+            const originY = toggleRect.top + (toggleRect.height / 2) - panelRect.top;
+            panel.style.setProperty("--task-origin-x", `${originX}px`);
+            panel.style.setProperty("--task-origin-y", `${originY}px`);
+        }
+
+        function syncAllOrigins() {
+            entries.forEach(syncOrigin);
+        }
+
+        function openEntry(item) {
+            const { node, toggle, panel } = item;
+            panel.hidden = false;
+            panel.classList.remove("closing");
+            syncOrigin(item);
+            window.requestAnimationFrame(() => {
+                syncOrigin(item);
+                void panel.offsetWidth;
+                panel.classList.add("is-visible");
+                node.classList.add("is-open");
+                toggle.classList.add("is-active");
+                toggle.setAttribute("aria-expanded", "true");
+                window.sessionStorage.setItem(activeKey, item.taskId);
+            });
+        }
+
+        function closeEntry(item) {
+            return new Promise((resolve) => {
+                const { node, toggle, panel } = item;
+                if (panel.hidden || panel.classList.contains("closing")) {
+                    resolve();
+                    return;
+                }
+
+                panel.classList.remove("is-visible");
+                panel.classList.add("closing");
+                node.classList.remove("is-open");
+                toggle.classList.remove("is-active");
+                toggle.setAttribute("aria-expanded", "false");
+
+                panel.addEventListener(
+                    "animationend",
+                    (event) => {
+                        if (event.animationName !== "task-detail-panel-close") return;
+                        panel.hidden = true;
+                        panel.classList.remove("closing");
+                        resolve();
+                    },
+                    { once: true },
+                );
+            });
+        }
+
+        function setActiveInstant(item) {
+            entries.forEach((entry) => {
+                const isTarget = entry === item;
+                entry.panel.classList.remove("closing");
+                entry.panel.classList.toggle("is-visible", isTarget);
+                entry.panel.hidden = !isTarget;
+                entry.node.classList.toggle("is-open", isTarget);
+                entry.toggle.classList.toggle("is-active", isTarget);
+                entry.toggle.setAttribute("aria-expanded", isTarget ? "true" : "false");
+            });
+            if (item) {
+                syncOrigin(item);
+                window.sessionStorage.setItem(activeKey, item.taskId);
+            }
+        }
+
+        const savedTaskId = window.sessionStorage.getItem(activeKey);
+        let activeEntry =
+            entries.find((item) => item.taskId === savedTaskId) ||
+            entries.find((item) => item.panel.classList.contains("is-visible")) ||
+            entries[0];
+
+        if (activeEntry) {
+            setActiveInstant(activeEntry);
+        }
+
+        entries.forEach((item) => {
+            item.toggle.addEventListener("click", async () => {
+                if (item === activeEntry && item.panel.classList.contains("is-visible")) return;
+                if (activeEntry && activeEntry !== item) {
+                    await closeEntry(activeEntry);
+                }
+                openEntry(item);
+                activeEntry = item;
+            });
+
+            item.form?.addEventListener("submit", async (event) => {
+                event.preventDefault();
+                const hiddenInput = item.form.querySelector("input[name='is_completed']");
+                const submitBtn = item.form.querySelector("button[type='submit']");
+                if (!hiddenInput || !submitBtn) {
+                    item.form.submit();
+                    return;
+                }
+
+                const pendingValue = hiddenInput.value;
+                submitBtn.disabled = true;
+                item.toggle.disabled = true;
+
+                try {
+                    const response = await fetch(item.form.action, {
+                        method: "POST",
+                        body: new FormData(item.form),
+                        credentials: "same-origin",
+                        headers: { "X-Requested-With": "XMLHttpRequest" },
+                    });
+
+                    if (!response.ok) throw new Error("Task completion update failed");
+
+                    const completedNow = pendingValue === "1";
+                    hiddenInput.value = completedNow ? "0" : "1";
+                    submitBtn.textContent = completedNow ? "Done" : "Mark Done";
+                    submitBtn.classList.toggle("btn-success", completedNow);
+                    submitBtn.classList.toggle("btn-outline-primary", !completedNow);
+                    item.toggle.classList.toggle("is-done", completedNow);
+                    window.sessionStorage.setItem(activeKey, item.taskId);
+                } catch (error) {
+                    item.form.submit();
+                    return;
+                } finally {
+                    submitBtn.disabled = false;
+                    item.toggle.disabled = false;
+                }
+            });
+        });
+
+        window.addEventListener("resize", syncAllOrigins);
+        window.addEventListener("load", syncAllOrigins);
+        syncAllOrigins();
+    })();
+</script>
+{% endif %}
 
 {% endif %}
 
