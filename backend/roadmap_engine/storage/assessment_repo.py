@@ -165,3 +165,45 @@ def submit_assessment(
                 assessment_id,
             ),
         )
+
+
+def list_assessments_for_goal(
+    goal_id: int,
+    *,
+    submitted_only: bool = True,
+    limit: int = 1000,
+) -> list[dict]:
+    where_clause = "a.goal_id = ?"
+    params: list = [goal_id]
+    if submitted_only:
+        where_clause += " AND a.submitted_at IS NOT NULL"
+
+    query = f"""
+        SELECT
+            a.id,
+            a.goal_id,
+            a.goal_skill_id,
+            a.attempt_no,
+            a.score_percent,
+            a.passed,
+            a.created_at,
+            a.submitted_at,
+            s.skill_name
+        FROM skill_assessments a
+        JOIN career_goal_skills s ON s.id = a.goal_skill_id
+        WHERE {where_clause}
+        ORDER BY
+            CASE WHEN a.submitted_at IS NULL THEN 1 ELSE 0 END,
+            a.submitted_at ASC,
+            a.id ASC
+        LIMIT ?
+    """
+    params.append(max(1, int(limit)))
+
+    connection = get_connection()
+    try:
+        rows = connection.execute(query, params).fetchall()
+    finally:
+        connection.close()
+
+    return [dict(row) for row in rows]

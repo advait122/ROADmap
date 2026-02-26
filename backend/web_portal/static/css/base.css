@@ -1298,6 +1298,19 @@ body.dashboard-page::before {
     transform: none;
 }
 
+body.dashboard-page.dashboard-section-roadmap::before,
+body.dashboard-page.dashboard-section-tasks::before,
+body.dashboard-page.dashboard-section-tests::before,
+body.dashboard-page.dashboard-section-opportunities::before {
+    background-color: #f5f0e8;
+    background-image: none;
+    background-size: auto;
+    background-repeat: repeat;
+    background-position: center top;
+    filter: none;
+    transform: none;
+}
+
 body:not(.onboarding-page) main.container {
     animation: page-enter 0.48s cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
