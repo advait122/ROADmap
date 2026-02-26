@@ -96,6 +96,8 @@ def create_student_goal_plan(
     branch: str,
     current_year: int,
     weekly_study_hours: int,
+    cgpa: float,
+    active_backlog: bool,
     selected_skills: list[str],
     custom_skills_text: str,
     goal_text: str,
@@ -118,6 +120,12 @@ def create_student_goal_plan(
         raise ValueError(
             f"Weekly study hours must be between {MIN_WEEKLY_STUDY_HOURS} and {MAX_WEEKLY_STUDY_HOURS}."
         )
+    try:
+        cgpa_value = float(cgpa)
+    except (TypeError, ValueError) as error:
+        raise ValueError("CGPA must be a valid number between 0 and 10.") from error
+    if cgpa_value < 0 or cgpa_value > 10:
+        raise ValueError("CGPA must be between 0 and 10.")
 
     custom_skills = parse_custom_skills(custom_skills_text)
     all_known_skills = deduplicate_skills(selected_skills + custom_skills)
@@ -129,6 +137,8 @@ def create_student_goal_plan(
         branch=branch,
         current_year=current_year,
         weekly_study_hours=weekly_study_hours or DEFAULT_WEEKLY_STUDY_HOURS,
+        cgpa=cgpa_value,
+        has_active_backlog=bool(active_backlog),
     )
 
     predefined_normalized = {normalize_skill(skill) for skill in PREDEFINED_SKILLS}

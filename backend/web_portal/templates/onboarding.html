@@ -92,6 +92,32 @@
                                 required
                             >
                         </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Current CGPA</label>
+                            <input
+                                type="number"
+                                name="cgpa"
+                                class="form-control onboarding-input"
+                                min="0"
+                                max="10"
+                                step="0.01"
+                                placeholder="Example: 8.2"
+                                required
+                            >
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Active Backlog?</label>
+                            <div class="onboarding-toggle-group">
+                                <label class="onboarding-toggle-pill">
+                                    <input type="radio" name="active_backlog" value="yes">
+                                    Yes
+                                </label>
+                                <label class="onboarding-toggle-pill">
+                                    <input type="radio" name="active_backlog" value="no" checked>
+                                    No
+                                </label>
+                            </div>
+                        </div>
                     </div>
                     <div class="step-actions mt-4">
                         <button type="button" class="btn btn-outline-secondary step-btn" data-prev-step="1">Back</button>

@@ -415,6 +415,45 @@
     vertical-align: middle;
 }
 
+.onboarding-toggle-group {
+    display: flex;
+    gap: 0.65rem;
+    flex-wrap: wrap;
+    min-height: 44px;
+    align-items: center;
+}
+
+.onboarding-toggle-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    border: 1px solid rgba(209, 99, 0, 0.45);
+    border-radius: 999px;
+    background: rgba(246, 179, 40, 0.2);
+    color: #5f3510;
+    padding: 0.35rem 0.74rem;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 0.84rem;
+    line-height: 1;
+    user-select: none;
+}
+
+.onboarding-toggle-pill input {
+    appearance: none;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: 2px solid #d16300;
+    background: transparent;
+    margin: 0;
+}
+
+.onboarding-toggle-pill input:checked {
+    background: #e77717;
+    box-shadow: 0 0 0 2px rgba(231, 119, 23, 0.2);
+}
+
 .skill-bubbles {
     display: flex;
     flex-wrap: wrap;

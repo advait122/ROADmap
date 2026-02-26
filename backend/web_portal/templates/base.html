@@ -227,6 +227,35 @@
                         </div>
                     </div>
                 </div>
+            {% elif company is defined and company and not student and request.url.path == "/company/dashboard" %}
+                {% set company_section = active_company_section if active_company_section is defined else "dashboard" %}
+                {% set active_company_job_id = company_dashboard.active_job.id if company_dashboard is defined and company_dashboard.active_job is defined and company_dashboard.active_job else None %}
+                {% set active_company_top = company_dashboard.top_filter if company_dashboard is defined and company_dashboard.top_filter is defined else 20 %}
+                <div class="ribbon-nav" role="navigation" aria-label="Company Dashboard Sections">
+                    <a
+                        href="/company/dashboard?section=dashboard{% if active_company_job_id %}&job_id={{ active_company_job_id }}{% endif %}&top={{ active_company_top }}"
+                        class="ribbon-link {% if company_section == 'dashboard' %}active{% endif %}"
+                    >
+                        Dashboard
+                    </a>
+                    <a
+                        href="/company/dashboard?section=eligible{% if active_company_job_id %}&job_id={{ active_company_job_id }}{% endif %}&top={{ active_company_top }}"
+                        class="ribbon-link {% if company_section == 'eligible' %}active{% endif %}"
+                    >
+                        Eligible Students
+                    </a>
+                    <a
+                        href="/company/dashboard?section=applied{% if active_company_job_id %}&job_id={{ active_company_job_id }}{% endif %}&top={{ active_company_top }}"
+                        class="ribbon-link {% if company_section == 'applied' %}active{% endif %}"
+                    >
+                        Applied Students
+                    </a>
+                </div>
+                <div class="topbar-actions">
+                    <form method="post" action="/company/logout" class="company-topbar-logout-form">
+                        <button type="submit" class="company-topbar-logout-btn">Logout</button>
+                    </form>
+                </div>
             {% elif request.url.path == "/onboarding" %}
                 <div class="ribbon-nav" aria-hidden="true"></div>
                 <div class="topbar-actions">

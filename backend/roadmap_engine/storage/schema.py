@@ -9,6 +9,8 @@ BASE_TABLE_STATEMENTS = [
         branch TEXT NOT NULL,
         current_year INTEGER NOT NULL,
         weekly_study_hours INTEGER NOT NULL DEFAULT 8,
+        cgpa REAL NOT NULL DEFAULT 7.0,
+        has_active_backlog INTEGER NOT NULL DEFAULT 0,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL
     );
@@ -292,6 +294,14 @@ def _ensure_legacy_compatibility(cursor) -> None:
     if "weekly_study_hours" not in student_columns:
         cursor.execute(
             "ALTER TABLE students ADD COLUMN weekly_study_hours INTEGER NOT NULL DEFAULT 8"
+        )
+    if "cgpa" not in student_columns:
+        cursor.execute(
+            "ALTER TABLE students ADD COLUMN cgpa REAL NOT NULL DEFAULT 7.0"
+        )
+    if "has_active_backlog" not in student_columns:
+        cursor.execute(
+            "ALTER TABLE students ADD COLUMN has_active_backlog INTEGER NOT NULL DEFAULT 0"
         )
 
     # Old roadmap tasks table may contain minutes_spent. Rebuild without that column.

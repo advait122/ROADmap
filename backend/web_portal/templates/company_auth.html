@@ -20,18 +20,18 @@
             <h2 class="setup-title">Login as Company</h2>
             <p class="setup-subtitle">Sign in to post roles and shortlist top candidates.</p>
 
-            {% if error %}
-                <div class="alert alert-danger mb-3">{{ error }}</div>
-            {% endif %}
+            <div id="companyLoginError" class="alert alert-danger mb-3{% if not error %} d-none{% endif %}">
+                {{ error }}
+            </div>
 
             <section class="company-auth-card company-auth-card-single">
-                <h3 class="company-auth-title">Login</h3>
-                <form method="post" action="/company/login">
+                <form id="companyLoginForm" method="post" action="/company/login">
                     <div class="mb-3">
                         <label class="form-label">Username</label>
                         <input
                             type="text"
                             name="username"
+                            id="companyLoginUsername"
                             class="form-control onboarding-input"
                             required
                         >
@@ -41,6 +41,7 @@
                         <input
                             type="password"
                             name="password"
+                            id="companyLoginPassword"
                             class="form-control onboarding-input"
                             required
                         >
@@ -54,4 +55,41 @@
         </div>
     </div>
 </section>
+<script>
+    (function () {
+        const form = document.getElementById("companyLoginForm");
+        const errorBox = document.getElementById("companyLoginError");
+        const passwordInput = document.getElementById("companyLoginPassword");
+        if (!form || !errorBox || !passwordInput) return;
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) submitBtn.disabled = true;
+
+            try {
+                const response = await fetch(form.action, {
+                    method: "POST",
+                    body: new FormData(form),
+                    credentials: "same-origin",
+                    headers: { "X-Requested-With": "XMLHttpRequest" },
+                });
+
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok || !data.ok) {
+                    throw new Error(data.error || "Invalid login credentials.");
+                }
+
+                window.location.href = data.redirect_url || "/company/dashboard";
+            } catch (error) {
+                errorBox.textContent = error && error.message ? error.message : "Invalid login credentials.";
+                errorBox.classList.remove("d-none");
+                passwordInput.value = "";
+                passwordInput.focus();
+            } finally {
+                if (submitBtn) submitBtn.disabled = false;
+            }
+        });
+    })();
+</script>
 {% endblock %}

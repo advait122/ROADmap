@@ -88,15 +88,6 @@ def build_job_title(job_description: str) -> str:
     return compact[:61].rstrip() + "..."
 
 
-def _synthetic_cgpa(student_id: int) -> float:
-    value = 6.2 + (((student_id * 37) + 19) % 35) / 10
-    return round(min(max(value, 0.0), 10.0), 2)
-
-
-def _synthetic_has_backlog(student_id: int) -> bool:
-    return ((student_id * 11) + 3) % 5 == 0
-
-
 def _synthetic_skill_score(student_id: int, normalized_skill: str) -> float:
     signature = sum(ord(ch) for ch in f"{student_id}:{normalized_skill}")
     return float(62 + (signature % 34))
@@ -134,17 +125,43 @@ def _rank_candidates_for_job(job: dict) -> list[dict]:
 
     for student in students:
         student_id = int(student["id"])
-        skill_keys = company_repo.list_student_skill_keys(student_id)
+        skill_rows = students_repo.list_student_skills(student_id)
+        skill_keys = {
+            str(row.get("normalized_skill") or "").strip()
+            for row in skill_rows
+            if str(row.get("normalized_skill") or "").strip()
+        }
         if not required_set.issubset(skill_keys):
             continue
 
-        cgpa = _synthetic_cgpa(student_id)
+        try:
+            cgpa = round(float(student.get("cgpa", 0.0)), 2)
+        except (TypeError, ValueError):
+            cgpa = 0.0
         if cgpa < float(job["min_cgpa"]):
             continue
 
-        has_backlog = _synthetic_has_backlog(student_id)
+        try:
+            has_backlog = bool(int(student.get("has_active_backlog", 0)))
+        except (TypeError, ValueError):
+            has_backlog = False
         if int(job["allow_active_backlog"]) == 0 and has_backlog:
             continue
+
+        all_skill_labels: list[str] = []
+        seen_labels: set[str] = set()
+        for row in skill_rows:
+            normalized = str(row.get("normalized_skill") or "").strip()
+            raw_name = str(row.get("skill_name") or "").strip()
+            source = normalized or raw_name
+            if not source:
+                continue
+            label = display_skill(source)
+            label_key = label.lower()
+            if label_key in seen_labels:
+                continue
+            seen_labels.add(label_key)
+            all_skill_labels.append(label)
 
         per_skill_scores: list[float] = []
         sources: set[str] = set()
@@ -158,7 +175,11 @@ def _rank_candidates_for_job(job: dict) -> list[dict]:
         )
         replan_count = company_repo.count_replan_notifications(student_id)
         regularity = round(_regularity_rating(student_id, replan_count), 2)
-        final_score = round((cumulative_test_score * 0.72) + (regularity * 0.28), 2)
+        cgpa_score = min(100.0, max(0.0, cgpa * 10.0))
+        final_score = round(
+            (cumulative_test_score * 0.62) + (regularity * 0.23) + (cgpa_score * 0.15),
+            2,
+        )
 
         app = application_by_student.get(student_id)
         application_status = app["status"] if app else "pending"
@@ -170,6 +191,7 @@ def _rank_candidates_for_job(job: dict) -> list[dict]:
                 "branch": student["branch"],
                 "current_year": student["current_year"],
                 "matched_skills": [display_skill(key) for key in required],
+                "all_skills_display": all_skill_labels,
                 "cumulative_test_score": cumulative_test_score,
                 "regularity_rating": regularity,
                 "replan_count": replan_count,
@@ -187,6 +209,7 @@ def _rank_candidates_for_job(job: dict) -> list[dict]:
             item["final_score"],
             item["cumulative_test_score"],
             item["regularity_rating"],
+            item["cgpa"],
         ),
         reverse=True,
     )
@@ -199,7 +222,12 @@ def _build_demo_candidates(job: dict, count: int) -> list[dict]:
     for idx in range(1, count + 1):
         test_score = float(68 + ((idx * 7) % 28))
         regularity = float(72 + ((idx * 5) % 24))
-        final_score = round((test_score * 0.72) + (regularity * 0.28), 2)
+        cgpa = round(7.1 + (idx % 10) * 0.2, 2)
+        cgpa_score = min(100.0, max(0.0, cgpa * 10.0))
+        final_score = round(
+            (test_score * 0.62) + (regularity * 0.23) + (cgpa_score * 0.15),
+            2,
+        )
         demos.append(
             {
                 "student_id": -idx,
@@ -207,11 +235,12 @@ def _build_demo_candidates(job: dict, count: int) -> list[dict]:
                 "branch": "CSE",
                 "current_year": 3 + (idx % 2),
                 "matched_skills": required,
+                "all_skills_display": required,
                 "cumulative_test_score": round(test_score, 2),
                 "regularity_rating": round(regularity, 2),
                 "replan_count": idx % 3,
                 "final_score": final_score,
-                "cgpa": round(7.1 + (idx % 10) * 0.2, 2),
+                "cgpa": cgpa,
                 "has_active_backlog": False,
                 "application_status": "demo",
                 "is_shortlisted": False,
@@ -298,7 +327,7 @@ def create_company_job(
     return job
 
 
-def get_company_dashboard(company_id: int, job_id: int | None, top_n: int) -> dict:
+def get_company_dashboard(company_id: int, job_id: int | None, top_n: int | None) -> dict:
     company = company_repo.get_company_account(company_id)
     if company is None:
         raise ValueError("Company account not found.")
@@ -315,9 +344,20 @@ def get_company_dashboard(company_id: int, job_id: int | None, top_n: int) -> di
     if selected_job is None:
         selected_job = jobs[0]
 
-    top_value = int(top_n)
-    if top_value not in TOP_FILTER_OPTIONS:
-        top_value = 20
+    default_top = int(selected_job.get("shortlist_count") or 20)
+    if default_top < 1:
+        default_top = 20
+
+    if top_n is None:
+        top_value = default_top
+    else:
+        try:
+            top_value = int(top_n)
+        except (TypeError, ValueError):
+            top_value = default_top
+        if top_value < 1:
+            top_value = default_top
+    top_value = min(top_value, 500)
 
     ranked = _rank_candidates_for_job(selected_job)
     using_demo_data = False
@@ -358,7 +398,7 @@ def get_company_dashboard(company_id: int, job_id: int | None, top_n: int) -> di
         "jobs": jobs,
         "active_job": selected_job,
         "top_filter": top_value,
-        "top_options": TOP_FILTER_OPTIONS,
+        "top_options": sorted({*TOP_FILTER_OPTIONS, default_top}),
         "top_candidates": top_candidates,
         "applied_candidates": applied_candidates,
         "selected_students": selected_students,

@@ -4,7 +4,7 @@ import time
 from urllib.parse import quote_plus
 
 from fastapi import APIRouter, Form, HTTPException, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
 from backend.roadmap_engine.constants import (
@@ -40,6 +40,11 @@ ALLOWED_DASHBOARD_SECTIONS = {
     "doubtbot",
     "opportunities",
 }
+ALLOWED_COMPANY_DASHBOARD_SECTIONS = {
+    "dashboard",
+    "eligible",
+    "applied",
+}
 
 
 def _asset_version() -> str:
@@ -50,6 +55,13 @@ def _asset_version() -> str:
 def _normalize_dashboard_section(section: str, default: str = "roadmap") -> str:
     normalized = (section or "").lower().strip()
     if normalized in ALLOWED_DASHBOARD_SECTIONS:
+        return normalized
+    return default
+
+
+def _normalize_company_section(section: str, default: str = "dashboard") -> str:
+    normalized = (section or "").lower().strip()
+    if normalized in ALLOWED_COMPANY_DASHBOARD_SECTIONS:
         return normalized
     return default
 
@@ -116,6 +128,8 @@ def onboarding_submit(
     branch: str = Form(...),
     current_year: int = Form(...),
     weekly_study_hours: int = Form(DEFAULT_WEEKLY_STUDY_HOURS),
+    cgpa: float = Form(...),
+    active_backlog: str = Form(default="no"),
     selected_skills: list[str] = Form(default=[]),
     custom_skills: str = Form(default=""),
     goal_text: str = Form(...),
@@ -127,6 +141,8 @@ def onboarding_submit(
             branch=branch,
             current_year=current_year,
             weekly_study_hours=weekly_study_hours,
+            cgpa=cgpa,
+            active_backlog=str(active_backlog).strip().lower() == "yes",
             selected_skills=selected_skills,
             custom_skills_text=custom_skills,
             goal_text=goal_text,
@@ -201,16 +217,26 @@ def company_signup(
 
 @router.post("/company/login")
 def company_login(
+    request: Request,
     username: str = Form(...),
     password: str = Form(...),
-) -> RedirectResponse:
+):
+    is_ajax = request.headers.get("X-Requested-With", "").lower() == "xmlhttprequest"
     try:
         company = company_service.login_company(username=username, password=password)
     except ValueError as error:
+        if is_ajax:
+            return JSONResponse({"ok": False, "error": str(error)}, status_code=400)
         escaped = quote_plus(str(error))
         return RedirectResponse(url=f"/company/auth?error={escaped}", status_code=303)
 
-    response = RedirectResponse(url="/company/dashboard", status_code=303)
+    if is_ajax:
+        response: RedirectResponse | JSONResponse = JSONResponse(
+            {"ok": True, "redirect_url": "/company/dashboard"},
+            status_code=200,
+        )
+    else:
+        response = RedirectResponse(url="/company/dashboard", status_code=303)
     response.set_cookie(
         COMPANY_COOKIE_KEY,
         str(company["id"]),
@@ -320,6 +346,7 @@ def company_job_step2_page(request: Request, error: str = "") -> HTMLResponse:
 def company_job_create(
     request: Request,
     min_cgpa: float = Form(...),
+    shortlist_count: int = Form(20),
     application_deadline: str = Form(...),
 ) -> RedirectResponse:
     company = _current_company(request)
@@ -339,14 +366,17 @@ def company_job_create(
             required_skills=[str(item) for item in draft.get("required_skills", [])],
             allow_active_backlog=bool(draft.get("allow_active_backlog", True)),
             min_cgpa=float(min_cgpa),
-            shortlist_count=20,
+            shortlist_count=int(shortlist_count),
             application_deadline=application_deadline,
         )
     except ValueError as error:
         escaped = quote_plus(str(error))
         return RedirectResponse(url=f"/company/job/create/step2?error={escaped}", status_code=303)
 
-    response = RedirectResponse(url=f"/company/dashboard?job_id={job['id']}", status_code=303)
+    response = RedirectResponse(
+        url=f"/company/dashboard?job_id={job['id']}&top={int(job['shortlist_count'])}",
+        status_code=303,
+    )
     response.delete_cookie(COMPANY_DRAFT_COOKIE_KEY)
     return response
 
@@ -355,13 +385,15 @@ def company_job_create(
 def company_dashboard_page(
     request: Request,
     job_id: int | None = None,
-    top: int = 20,
+    top: int | None = None,
+    section: str = "dashboard",
     error: str = "",
 ) -> HTMLResponse:
     company = _current_company(request)
     if company is None:
         escaped = quote_plus("Please login as a company first.")
         return RedirectResponse(url=f"/company/auth?error={escaped}", status_code=303)
+    active_company_section = _normalize_company_section(section, "dashboard")
 
     try:
         dashboard = company_service.get_company_dashboard(
@@ -380,6 +412,7 @@ def company_dashboard_page(
             "asset_version": _asset_version(),
             "company": company,
             "company_dashboard": dashboard,
+            "active_company_section": active_company_section,
             "error": error,
         },
     )
@@ -389,13 +422,15 @@ def company_dashboard_page(
 def company_shortlist_students(
     request: Request,
     job_id: int,
-    top: int = 20,
+    top: int | None = None,
+    section: str = "applied",
     selected_student_ids: list[int] = Form(default=[]),
 ) -> RedirectResponse:
     company = _current_company(request)
     if company is None:
         escaped = quote_plus("Please login as a company first.")
         return RedirectResponse(url=f"/company/auth?error={escaped}", status_code=303)
+    active_company_section = _normalize_company_section(section, "applied")
 
     try:
         company_service.shortlist_students(
@@ -405,12 +440,17 @@ def company_shortlist_students(
         )
     except ValueError as error:
         escaped = quote_plus(str(error))
+        top_query = f"&top={top}" if top is not None else ""
         return RedirectResponse(
-            url=f"/company/dashboard?job_id={job_id}&top={top}&error={escaped}",
+            url=f"/company/dashboard?job_id={job_id}{top_query}&section={active_company_section}&error={escaped}",
             status_code=303,
         )
 
-    return RedirectResponse(url=f"/company/dashboard?job_id={job_id}&top={top}", status_code=303)
+    top_query = f"&top={top}" if top is not None else ""
+    return RedirectResponse(
+        url=f"/company/dashboard?job_id={job_id}{top_query}&section={active_company_section}",
+        status_code=303,
+    )
 
 
 @router.post("/students/{student_id}/roadmap/replan")

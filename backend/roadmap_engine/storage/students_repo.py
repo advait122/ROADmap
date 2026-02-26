@@ -2,17 +2,42 @@ from backend.roadmap_engine.storage.database import get_connection, transaction
 from backend.roadmap_engine.utils import utc_now_iso
 
 
-def create_student(name: str, branch: str, current_year: int, weekly_study_hours: int) -> int:
+def create_student(
+    name: str,
+    branch: str,
+    current_year: int,
+    weekly_study_hours: int,
+    cgpa: float,
+    has_active_backlog: bool,
+) -> int:
     now = utc_now_iso()
 
     with transaction() as connection:
         cursor = connection.cursor()
         cursor.execute(
             """
-            INSERT INTO students (name, branch, current_year, weekly_study_hours, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO students (
+                name,
+                branch,
+                current_year,
+                weekly_study_hours,
+                cgpa,
+                has_active_backlog,
+                created_at,
+                updated_at
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            (name, branch, current_year, weekly_study_hours, now, now),
+            (
+                name,
+                branch,
+                current_year,
+                weekly_study_hours,
+                float(cgpa),
+                1 if has_active_backlog else 0,
+                now,
+                now,
+            ),
         )
         return int(cursor.lastrowid)
 
@@ -22,7 +47,16 @@ def get_student(student_id: int) -> dict | None:
     try:
         row = connection.execute(
             """
-            SELECT id, name, branch, current_year, weekly_study_hours, created_at, updated_at
+            SELECT
+                id,
+                name,
+                branch,
+                current_year,
+                weekly_study_hours,
+                cgpa,
+                has_active_backlog,
+                created_at,
+                updated_at
             FROM students
             WHERE id = ?
             """,
@@ -42,7 +76,16 @@ def list_students() -> list[dict]:
     try:
         rows = connection.execute(
             """
-            SELECT id, name, branch, current_year, weekly_study_hours, created_at, updated_at
+            SELECT
+                id,
+                name,
+                branch,
+                current_year,
+                weekly_study_hours,
+                cgpa,
+                has_active_backlog,
+                created_at,
+                updated_at
             FROM students
             ORDER BY id DESC
             """

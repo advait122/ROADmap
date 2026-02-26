@@ -49,7 +49,7 @@
 
             <form method="post" action="/company/job/create">
                 <div class="row g-3">
-                    <div class="col-md-6">
+                    <div class="col-md-4">
                         <label class="form-label">Min CGPA Required</label>
                         <input
                             type="number"
@@ -62,7 +62,20 @@
                             required
                         >
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-md-4">
+                        <label class="form-label">No. of Students to Show</label>
+                        <input
+                            type="number"
+                            name="shortlist_count"
+                            class="form-control onboarding-input"
+                            min="1"
+                            max="500"
+                            step="1"
+                            value="20"
+                            required
+                        >
+                    </div>
+                    <div class="col-md-4">
                         <label class="form-label">Application Deadline</label>
                         <input
                             type="date"
