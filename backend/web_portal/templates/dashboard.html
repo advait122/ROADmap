@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block title %}Dashboard | CodeMap{% endblock %}
-{% block body_class %}dashboard-page{% endblock %}
+{% block body_class %}dashboard-page dashboard-section-{{ active_section if active_section else "roadmap" }}{% endblock %}
 {% block page_styles %}
 <link href="/static/css/dashboard.css?v={{ asset_version }}" rel="stylesheet">
 {% endblock %}
@@ -494,8 +494,9 @@
 {% endif %}
 
 {% if section == "tests" %}
-<section id="tests" class="page-card p-4 mb-4">
-    <h3 class="h5 mb-3">Skill Tests</h3>
+<section id="tests" class="page-card dashboard-tests-card p-0 mb-4">
+    <h3 class="dashboard-tests-ribbon">Skill Tests</h3>
+    <div class="dashboard-tests-content">
     {% set ready_items = dashboard.goal_skills | selectattr('ready_for_test') | list %}
     {% if ready_items %}
         <ul class="list-group">
@@ -509,6 +510,57 @@
     {% else %}
         <p class="text-muted mb-0">Complete all tasks for a skill to unlock its test.</p>
     {% endif %}
+
+    <hr class="my-4">
+    <h4 class="h6 mb-3">Test History</h4>
+    {% if dashboard.test_history %}
+        <div class="table-responsive">
+            <table class="table align-middle dashboard-test-history-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Skill</th>
+                        <th>Attempt</th>
+                        <th>Submitted At</th>
+                        <th>Score</th>
+                        <th>Result</th>
+                        <th>Review</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for attempt in dashboard.test_history %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td>{{ attempt.skill_name }}</td>
+                        <td>{{ attempt.display_attempt_no }}</td>
+                        <td>{{ attempt.submitted_at or "-" }}</td>
+                        <td class="{% if attempt.passed == 1 %}test-score-passed{% elif attempt.passed == 0 %}test-score-failed{% endif %}">{{ attempt.score_display }}</td>
+                        <td>
+                            {% if attempt.passed == 1 %}
+                                <span class="badge test-result-badge is-passed">Passed</span>
+                            {% elif attempt.passed == 0 %}
+                                <span class="badge test-result-badge is-failed">Failed</span>
+                            {% else %}
+                                <span class="badge test-result-badge is-pending">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <a
+                                class="btn btn-sm btn-outline-primary"
+                                href="/students/{{ student.id }}/skills/tests/{{ attempt.id }}/result"
+                            >
+                                View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="text-muted mb-0">No test attempts yet. Your attempts will appear here chronologically.</p>
+    {% endif %}
+    </div>
 </section>
 {% endif %}
 
@@ -556,76 +608,793 @@
 {% endif %}
 
 {% if section == "opportunities" %}
-<section id="opportunities" class="page-card p-4 mb-4">
-    <h3 class="h5 mb-3">Opportunities</h3>
+{% set eligible_count = dashboard.opportunities.eligible_now | length %}
+{% set almost_count = dashboard.opportunities.almost_eligible | length %}
+{% set soon_count = dashboard.opportunities.coming_soon | length %}
+<section id="opportunities" class="opportunities-view mb-4">
+    <div class="opportunities-head">
+        <div class="opportunities-head-copy">
+            <h3 class="opportunities-title">Opportunities</h3>
+            <p class="opportunities-subtitle">Roles matched to your skills and goal company</p>
+        </div>
 
-    <ul class="nav nav-tabs mb-3" id="opportunityTabs" role="tablist">
-        <li class="nav-item" role="presentation">
-            <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#eligible" type="button">Eligible Now</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#almost" type="button">Almost Eligible</button>
-        </li>
-        <li class="nav-item" role="presentation">
-            <button class="nav-link" data-bs-toggle="tab" data-bs-target="#soon" type="button">Coming Soon</button>
-        </li>
-    </ul>
+        <div class="opportunities-head-actions">
+            <button
+                type="button"
+                id="opportunityFilterToggle"
+                class="opportunity-filter-toggle"
+                aria-expanded="false"
+                aria-controls="opportunityFilterPanel"
+            >
+                <span class="opportunity-filter-toggle-icon" aria-hidden="true"></span>
+                Filters
+            </button>
 
-    <div class="tab-content">
+            <ul class="nav nav-tabs opportunities-switcher" id="opportunityTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#eligible" type="button">
+                        Eligible Now
+                        <span class="opportunities-switcher-count">{{ eligible_count }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#almost" type="button">
+                        Almost Eligible
+                        <span class="opportunities-switcher-count">{{ almost_count }}</span>
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#soon" type="button">
+                        Coming Soon
+                        <span class="opportunities-switcher-count">{{ soon_count }}</span>
+                    </button>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <section id="opportunityFilterPanel" class="opportunity-filter-panel" hidden>
+        <div class="opportunity-filter-panel-inner">
+            <p class="opportunity-filter-kicker">Filter Opportunities</p>
+
+            <div class="opportunity-filter-grid">
+                <label class="opportunity-filter-field">
+                    <span>Type</span>
+                    <input
+                        id="opportunityTypeFilter"
+                        class="opportunity-filter-input opportunity-filter-input-dropdown"
+                        type="text"
+                        placeholder="All Types"
+                        autocomplete="off"
+                    >
+                    <div id="opportunityTypeSuggestions" class="opportunity-suggestion-box" hidden></div>
+                </label>
+
+                <label class="opportunity-filter-field">
+                    <span>Work Mode</span>
+                    <input
+                        id="opportunityWorkModeFilter"
+                        class="opportunity-filter-input opportunity-filter-input-dropdown"
+                        type="text"
+                        placeholder="All Modes"
+                        autocomplete="off"
+                    >
+                    <div id="opportunityWorkModeSuggestions" class="opportunity-suggestion-box" hidden></div>
+                </label>
+            </div>
+
+            <p class="opportunity-filter-location-label">Location</p>
+            <div class="opportunity-filter-grid opportunity-filter-grid-location">
+                <label class="opportunity-filter-field">
+                    <span>Country</span>
+                    <input
+                        id="opportunityCountryFilter"
+                        class="opportunity-filter-input"
+                        type="text"
+                        placeholder="Type country"
+                        autocomplete="off"
+                    >
+                    <div id="opportunityCountrySuggestions" class="opportunity-suggestion-box" hidden></div>
+                </label>
+
+                <label class="opportunity-filter-field">
+                    <span>State</span>
+                    <input
+                        id="opportunityStateFilter"
+                        class="opportunity-filter-input"
+                        type="text"
+                        placeholder="Type state"
+                        autocomplete="off"
+                    >
+                    <div id="opportunityStateSuggestions" class="opportunity-suggestion-box" hidden></div>
+                </label>
+
+                <label class="opportunity-filter-field">
+                    <span>City</span>
+                    <input
+                        id="opportunityCityFilter"
+                        class="opportunity-filter-input"
+                        type="text"
+                        placeholder="Type city"
+                        autocomplete="off"
+                    >
+                    <div id="opportunityCitySuggestions" class="opportunity-suggestion-box" hidden></div>
+                </label>
+            </div>
+
+            <div class="opportunity-filter-actions">
+                <button type="button" id="opportunityFilterReset" class="btn btn-sm btn-outline-secondary">Reset</button>
+                <button type="button" id="opportunityFilterDone" class="opportunity-filter-done-btn">Done</button>
+            </div>
+        </div>
+    </section>
+
+    <div class="tab-content opportunities-tab-content">
         <div class="tab-pane fade show active" id="eligible">
             {% set items = dashboard.opportunities.eligible_now %}
+            {% set bucket_label = "Eligible Now" %}
+            {% set bucket_key = "eligible_now" %}
             {% include "partials/opportunity_bucket.html" %}
+
+            <section class="opportunity-forecast-card mb-4">
+                <header class="opportunity-forecast-ribbon">
+                    <h3 class="opportunity-forecast-ribbon-title">Likely Eligible In Next 7 Days</h3>
+                    <span class="opportunity-forecast-ribbon-meta">Based on your roadmap pace</span>
+                </header>
+                <div class="opportunity-forecast-body">
+                    {% if dashboard.opportunity_forecast_7_days %}
+                        <div class="opportunity-forecast-grid">
+                            {% for item in dashboard.opportunity_forecast_7_days %}
+                            <article class="opportunity-forecast-item">
+                                <div class="opportunity-forecast-pill">Likely by {{ item.predicted_eligible_date }}</div>
+                                <h4 class="opportunity-forecast-title">{{ item.title }}</h4>
+                                <p class="opportunity-forecast-meta">{{ item.company }}{% if item.type %} &middot; {{ item.type }}{% endif %}</p>
+                                <p class="opportunity-forecast-copy">
+                                    {% if item.skills_to_unlock %}
+                                        Unlock
+                                        {% for skill in item.skills_to_unlock[:2] %}
+                                            <span class="opportunity-inline-pill">{{ skill }}</span>
+                                        {% endfor %}
+                                        {% if item.skills_to_unlock|length > 2 %}+{{ item.skills_to_unlock|length - 2 }}{% endif %}
+                                    {% else %}
+                                        Keep current roadmap pace to unlock this role.
+                                    {% endif %}
+                                </p>
+                            </article>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-muted mb-0">No opportunities are projected to become eligible in the next 7 days yet.</p>
+                    {% endif %}
+                </div>
+            </section>
         </div>
         <div class="tab-pane fade" id="almost">
             {% set items = dashboard.opportunities.almost_eligible %}
+            {% set bucket_label = "Almost Eligible" %}
+            {% set bucket_key = "almost_eligible" %}
             {% include "partials/opportunity_bucket.html" %}
         </div>
         <div class="tab-pane fade" id="soon">
             {% set items = dashboard.opportunities.coming_soon %}
+            {% set bucket_label = "Coming Soon" %}
+            {% set bucket_key = "coming_soon" %}
             {% include "partials/opportunity_bucket.html" %}
         </div>
     </div>
 </section>
 
-<section class="page-card p-4 mb-4">
-    <h3 class="h5 mb-3">Likely Eligible In Next 7 Days</h3>
-    {% if dashboard.opportunity_forecast_7_days %}
-        <div class="table-responsive">
-            <table class="table align-middle">
-                <thead>
-                    <tr>
-                        <th>Opportunity</th>
-                        <th>Likely Eligible Date</th>
-                        <th>Skills To Unlock</th>
-                        <th>Deadline</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for item in dashboard.opportunity_forecast_7_days %}
-                    <tr>
-                        <td>
-                            <div class="fw-semibold">{{ item.title }}</div>
-                            <div class="small text-muted">{{ item.company }}{% if item.type %} | {{ item.type }}{% endif %}</div>
-                            <a href="{{ item.url }}" target="_blank" rel="noreferrer">Open</a>
-                        </td>
-                        <td>{{ item.predicted_eligible_date }}</td>
-                        <td>
-                            <div class="skills-list">
-                                {% for skill in item.skills_to_unlock %}
-                                    <span class="skill-pill">{{ skill }}</span>
-                                {% endfor %}
-                            </div>
-                        </td>
-                        <td>{{ item.deadline or "Not specified" }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    {% else %}
-        <p class="text-muted mb-0">No opportunities are projected to become eligible in the next 7 days yet.</p>
-    {% endif %}
-</section>
+<script>
+    (function () {
+        const root = document.getElementById("opportunities");
+        if (!root) return;
+        const studentId = {{ student.id | tojson }};
+
+        const filterToggle = document.getElementById("opportunityFilterToggle");
+        const filterPanel = document.getElementById("opportunityFilterPanel");
+        const filterDone = document.getElementById("opportunityFilterDone");
+        const filterReset = document.getElementById("opportunityFilterReset");
+        const typeFilter = document.getElementById("opportunityTypeFilter");
+        const workModeFilter = document.getElementById("opportunityWorkModeFilter");
+        const countryFilter = document.getElementById("opportunityCountryFilter");
+        const stateFilter = document.getElementById("opportunityStateFilter");
+        const cityFilter = document.getElementById("opportunityCityFilter");
+        const typeList = document.getElementById("opportunityTypeSuggestions");
+        const workModeList = document.getElementById("opportunityWorkModeSuggestions");
+        const countryList = document.getElementById("opportunityCountrySuggestions");
+        const stateList = document.getElementById("opportunityStateSuggestions");
+        const cityList = document.getElementById("opportunityCitySuggestions");
+
+        if (
+            !filterToggle ||
+            !filterPanel ||
+            !filterDone ||
+            !filterReset ||
+            !typeFilter ||
+            !workModeFilter ||
+            !countryFilter ||
+            !stateFilter ||
+            !cityFilter ||
+            !typeList ||
+            !workModeList ||
+            !countryList ||
+            !stateList ||
+            !cityList
+        ) {
+            return;
+        }
+
+        const cards = Array.from(root.querySelectorAll(".opportunity-card"));
+        if (!cards.length) return;
+
+        function normalize(value) {
+            return String(value || "").trim().toLowerCase();
+        }
+
+        function titleCase(value) {
+            const normalized = String(value || "").trim();
+            if (!normalized) return "";
+            return normalized
+                .split(/\s+/)
+                .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(" ");
+        }
+
+        function prettyLabel(value) {
+            return titleCase(String(value || "").replace(/[_-]+/g, " "));
+        }
+
+        const FILTER_PANEL_TRANSITION_MS = 170;
+        let filterPanelCloseTimer = 0;
+
+        function setFilterPanelOpen(open) {
+            if (filterPanelCloseTimer) {
+                window.clearTimeout(filterPanelCloseTimer);
+                filterPanelCloseTimer = 0;
+            }
+
+            if (open) {
+                filterPanel.removeAttribute("hidden");
+                window.requestAnimationFrame(() => {
+                    filterPanel.classList.add("is-visible");
+                });
+                filterToggle.classList.add("is-open");
+                filterToggle.setAttribute("aria-expanded", "true");
+                return;
+            }
+            filterPanel.classList.remove("is-visible");
+            filterToggle.classList.remove("is-open");
+            filterToggle.setAttribute("aria-expanded", "false");
+            hideSuggestionBox(typeList);
+            hideSuggestionBox(workModeList);
+            hideSuggestionBox(countryList);
+            hideSuggestionBox(stateList);
+            hideSuggestionBox(cityList);
+            filterPanelCloseTimer = window.setTimeout(() => {
+                filterPanel.setAttribute("hidden", "");
+                filterPanelCloseTimer = 0;
+            }, FILTER_PANEL_TRANSITION_MS);
+        }
+
+        function collectUniqueValues(selector) {
+            const valueSet = new Set();
+            cards.forEach((card) => {
+                const value = normalize(card.dataset[selector] || "");
+                if (value && value !== "unknown" && value !== "any") {
+                    valueSet.add(value);
+                }
+            });
+            return Array.from(valueSet).sort();
+        }
+
+        const typeOptions = [
+            { value: "all", label: "All Types" },
+            ...collectUniqueValues("oppType").map((value) => ({
+                value,
+                label: prettyLabel(value),
+            })),
+        ];
+
+        const workModeSet = new Set(["remote", "hybrid", "on-site"]);
+        collectUniqueValues("workMode").forEach((value) => workModeSet.add(value));
+        const workModeOptions = [
+            { value: "all", label: "All Modes" },
+            ...Array.from(workModeSet)
+                .sort()
+                .map((value) => ({
+                    value,
+                    label: prettyLabel(value),
+                })),
+        ];
+
+        function setFilterInputOption(inputEl, option) {
+            inputEl.dataset.selected = option.value;
+            inputEl.value = option.label;
+        }
+
+        function findFilterOption(options, value) {
+            const target = normalize(value);
+            if (!target) return null;
+            return (
+                options.find((option) => normalize(option.value) === target) ||
+                options.find((option) => normalize(option.label) === target) ||
+                null
+            );
+        }
+
+        function resolveFilterInputValue(inputEl, options) {
+            const typed = normalize(inputEl.value);
+            if (!typed) return "all";
+            const matched = findFilterOption(options, typed);
+            if (matched) return matched.value;
+            const selected = normalize(inputEl.dataset.selected);
+            if (selected) return selected;
+            return typed;
+        }
+
+        function filterLocalOptions(options, query) {
+            const normalizedQuery = normalize(query);
+            if (!normalizedQuery) return options;
+
+            const startsWith = [];
+            const contains = [];
+
+            options.forEach((option) => {
+                const byLabel = normalize(option.label);
+                const byValue = normalize(option.value);
+                if (byLabel.startsWith(normalizedQuery) || byValue.startsWith(normalizedQuery)) {
+                    startsWith.push(option);
+                    return;
+                }
+                if (byLabel.includes(normalizedQuery) || byValue.includes(normalizedQuery)) {
+                    contains.push(option);
+                }
+            });
+
+            return startsWith.concat(contains);
+        }
+
+        setFilterInputOption(typeFilter, typeOptions[0]);
+        setFilterInputOption(workModeFilter, workModeOptions[0]);
+
+        function buildSuggestionUrl(kind, params = {}) {
+            const search = new URLSearchParams();
+            Object.entries(params).forEach(([key, rawValue]) => {
+                const value = String(rawValue || "").trim();
+                if (value) search.set(key, value);
+            });
+            return `/students/${studentId}/locations/${kind}?${search.toString()}`;
+        }
+
+        const suggestionCache = new Map();
+
+        async function fetchSuggestions(kind, params = {}) {
+            const normalizedParams = {};
+            Object.entries(params).forEach(([key, rawValue]) => {
+                const value = String(rawValue || "").trim();
+                if (value) normalizedParams[key] = value;
+            });
+
+            if (kind !== "countries" && !normalizedParams.country) return [];
+            if (kind === "cities" && !normalizedParams.state) return [];
+
+            const cacheKey = `${kind}:${JSON.stringify(normalizedParams).toLowerCase()}`;
+            if (suggestionCache.has(cacheKey)) {
+                return suggestionCache.get(cacheKey) || [];
+            }
+
+            try {
+                const response = await fetch(buildSuggestionUrl(kind, normalizedParams), {
+                    credentials: "same-origin",
+                    headers: { "X-Requested-With": "XMLHttpRequest" },
+                });
+                if (!response.ok) return [];
+
+                const payload = await response.json();
+                const items = Array.isArray(payload.items)
+                    ? payload.items.map((item) => String(item || "").trim()).filter(Boolean)
+                    : [];
+                suggestionCache.set(cacheKey, items);
+                return items;
+            } catch (_error) {
+                return [];
+            }
+        }
+
+        let countryToken = 0;
+        let stateToken = 0;
+        let cityToken = 0;
+
+        function refreshTypeSuggestions() {
+            const options = filterLocalOptions(typeOptions, typeFilter.value);
+            renderStaticSuggestionBox(typeList, options, (option) => {
+                setFilterInputOption(typeFilter, option);
+                hideSuggestionBox(typeList);
+                applyFilters();
+            });
+        }
+
+        function refreshWorkModeSuggestions() {
+            const options = filterLocalOptions(workModeOptions, workModeFilter.value);
+            renderStaticSuggestionBox(workModeList, options, (option) => {
+                setFilterInputOption(workModeFilter, option);
+                hideSuggestionBox(workModeList);
+                applyFilters();
+            });
+        }
+
+        async function refreshCountrySuggestions() {
+            const requestToken = ++countryToken;
+            const items = await fetchSuggestions("countries", {
+                q: countryFilter.value,
+                limit: 10000,
+            });
+            if (requestToken !== countryToken) return;
+            renderSuggestionBox(countryList, items, (value) => {
+                countryFilter.value = value;
+                stateFilter.value = "";
+                cityFilter.value = "";
+                hideSuggestionBox(countryList);
+                applyFilters();
+                void refreshStateSuggestions();
+                void refreshCitySuggestions();
+            });
+        }
+
+        async function refreshStateSuggestions() {
+            if (!String(countryFilter.value || "").trim()) {
+                hideSuggestionBox(stateList);
+                return;
+            }
+            const requestToken = ++stateToken;
+            const items = await fetchSuggestions("states", {
+                country: countryFilter.value,
+                q: stateFilter.value,
+                limit: 10000,
+            });
+            if (requestToken !== stateToken) return;
+            renderSuggestionBox(stateList, items, (value) => {
+                stateFilter.value = value;
+                cityFilter.value = "";
+                hideSuggestionBox(stateList);
+                applyFilters();
+                void refreshCitySuggestions();
+            });
+        }
+
+        async function refreshCitySuggestions() {
+            if (!String(countryFilter.value || "").trim() || !String(stateFilter.value || "").trim()) {
+                hideSuggestionBox(cityList);
+                return;
+            }
+            const requestToken = ++cityToken;
+            const items = await fetchSuggestions("cities", {
+                country: countryFilter.value,
+                state: stateFilter.value,
+                q: cityFilter.value,
+                limit: 10000,
+            });
+            if (requestToken !== cityToken) return;
+            renderSuggestionBox(cityList, items, (value) => {
+                cityFilter.value = value;
+                hideSuggestionBox(cityList);
+                applyFilters();
+            });
+        }
+
+        async function hasExactLocation(kind, value, extraParams = {}) {
+            const query = String(value || "").trim();
+            if (!query) return false;
+            const items = await fetchSuggestions(kind, {
+                ...extraParams,
+                q: query,
+                limit: 50,
+            });
+            const target = normalize(query);
+            return items.some((item) => normalize(item) === target);
+        }
+
+        function refreshBucketEmptyStates() {
+            const bucketBodies = root.querySelectorAll(".opportunity-bucket-body");
+            bucketBodies.forEach((bucketBody) => {
+                const allCards = Array.from(bucketBody.querySelectorAll(".opportunity-card"));
+                const visibleCards = allCards.filter((card) => !card.hidden);
+                const emptyNode = bucketBody.querySelector(".opportunity-filter-empty");
+                if (emptyNode) {
+                    emptyNode.hidden = visibleCards.length !== 0;
+                }
+            });
+        }
+
+        function refreshTabCounts() {
+            const tabButtons = root.querySelectorAll(".opportunities-switcher .nav-link[data-bs-target]");
+            tabButtons.forEach((button) => {
+                const target = button.getAttribute("data-bs-target");
+                if (!target || !target.startsWith("#")) return;
+                const pane = root.querySelector(target);
+                if (!pane) return;
+                const count = pane.querySelectorAll(".opportunity-card:not([hidden])").length;
+                const countNode = button.querySelector(".opportunities-switcher-count");
+                if (countNode) countNode.textContent = String(count);
+            });
+        }
+
+        function applyFilters() {
+            const selectedType = normalize(resolveFilterInputValue(typeFilter, typeOptions));
+            const selectedWorkMode = normalize(resolveFilterInputValue(workModeFilter, workModeOptions));
+            const selectedCountry = normalize(countryFilter.value);
+            const selectedState = normalize(stateFilter.value);
+            const selectedCity = normalize(cityFilter.value);
+
+            cards.forEach((card) => {
+                const cardType = normalize(card.dataset.oppType);
+                const cardWorkMode = normalize(card.dataset.workMode);
+                const cardCountry = normalize(card.dataset.country);
+                const cardState = normalize(card.dataset.state);
+                const cardCity = normalize(card.dataset.city);
+
+                const typeMatches = selectedType === "all" || cardType.startsWith(selectedType);
+                const workModeMatches = selectedWorkMode === "all" || cardWorkMode.startsWith(selectedWorkMode);
+                const countryMatches = !selectedCountry || cardCountry.startsWith(selectedCountry);
+                const stateMatches = !selectedState || cardState.startsWith(selectedState);
+                const cityMatches = !selectedCity || cardCity.startsWith(selectedCity);
+
+                card.hidden = !(typeMatches && workModeMatches && countryMatches && stateMatches && cityMatches);
+            });
+
+            refreshBucketEmptyStates();
+            refreshTabCounts();
+        }
+
+        function applyFiltersAndSuggestions() {
+            applyFilters();
+            if (document.activeElement === typeFilter) {
+                refreshTypeSuggestions();
+                return;
+            }
+            if (document.activeElement === workModeFilter) {
+                refreshWorkModeSuggestions();
+                return;
+            }
+            if (document.activeElement === countryFilter) {
+                void refreshCountrySuggestions();
+                return;
+            }
+            if (document.activeElement === stateFilter) {
+                void refreshStateSuggestions();
+                return;
+            }
+            if (document.activeElement === cityFilter) {
+                void refreshCitySuggestions();
+                return;
+            }
+            hideSuggestionBox(typeList);
+            hideSuggestionBox(workModeList);
+            hideSuggestionBox(countryList);
+            hideSuggestionBox(stateList);
+            hideSuggestionBox(cityList);
+        }
+
+        const suggestionTimers = new Map();
+
+        function hideSuggestionBox(box) {
+            box.classList.remove("is-visible");
+            box.setAttribute("hidden", "");
+            box.innerHTML = "";
+        }
+
+        function renderStaticSuggestionBox(box, options, onSelect) {
+            box.innerHTML = "";
+            if (!options.length) {
+                hideSuggestionBox(box);
+                return;
+            }
+
+            options.forEach((option) => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "opportunity-suggestion-item";
+                button.textContent = option.label;
+                button.addEventListener("mousedown", (event) => {
+                    event.preventDefault();
+                    onSelect(option);
+                });
+                box.appendChild(button);
+            });
+
+            box.removeAttribute("hidden");
+            window.requestAnimationFrame(() => {
+                box.classList.add("is-visible");
+            });
+        }
+
+        function renderSuggestionBox(box, values, onSelect) {
+            box.innerHTML = "";
+            if (!values.length) {
+                hideSuggestionBox(box);
+                return;
+            }
+
+            values.forEach((value) => {
+                const button = document.createElement("button");
+                button.type = "button";
+                button.className = "opportunity-suggestion-item";
+                button.textContent = value;
+                button.addEventListener("mousedown", (event) => {
+                    event.preventDefault();
+                    onSelect(value);
+                });
+                box.appendChild(button);
+            });
+
+            box.removeAttribute("hidden");
+            window.requestAnimationFrame(() => {
+                box.classList.add("is-visible");
+            });
+        }
+
+        function scheduleSuggestionHide(box) {
+            const existing = suggestionTimers.get(box);
+            if (existing) window.clearTimeout(existing);
+            const timer = window.setTimeout(() => hideSuggestionBox(box), 120);
+            suggestionTimers.set(box, timer);
+        }
+
+        function cancelSuggestionHide(box) {
+            const existing = suggestionTimers.get(box);
+            if (existing) window.clearTimeout(existing);
+            suggestionTimers.delete(box);
+        }
+
+        function bindSuggestionFocus(input, box) {
+            input.addEventListener("blur", () => scheduleSuggestionHide(box));
+            input.addEventListener("focus", () => cancelSuggestionHide(box));
+            box.addEventListener("mouseenter", () => cancelSuggestionHide(box));
+            box.addEventListener("mouseleave", () => scheduleSuggestionHide(box));
+        }
+
+        bindSuggestionFocus(typeFilter, typeList);
+        bindSuggestionFocus(workModeFilter, workModeList);
+        bindSuggestionFocus(countryFilter, countryList);
+        bindSuggestionFocus(stateFilter, stateList);
+        bindSuggestionFocus(cityFilter, cityList);
+
+        filterToggle.addEventListener("click", () => {
+            const shouldOpen = filterPanel.hasAttribute("hidden");
+            setFilterPanelOpen(shouldOpen);
+        });
+
+        filterDone.addEventListener("click", () => setFilterPanelOpen(false));
+
+        filterReset.addEventListener("click", () => {
+            setFilterInputOption(typeFilter, typeOptions[0]);
+            setFilterInputOption(workModeFilter, workModeOptions[0]);
+            countryFilter.value = "";
+            stateFilter.value = "";
+            cityFilter.value = "";
+            applyFiltersAndSuggestions();
+        });
+
+        typeFilter.addEventListener("input", () => {
+            typeFilter.dataset.selected = "";
+            applyFilters();
+            refreshTypeSuggestions();
+            hideSuggestionBox(workModeList);
+        });
+
+        workModeFilter.addEventListener("input", () => {
+            workModeFilter.dataset.selected = "";
+            applyFilters();
+            refreshWorkModeSuggestions();
+            hideSuggestionBox(typeList);
+        });
+
+        countryFilter.addEventListener("input", () => {
+            applyFilters();
+            void refreshCountrySuggestions();
+            hideSuggestionBox(stateList);
+            hideSuggestionBox(cityList);
+        });
+
+        stateFilter.addEventListener("input", () => {
+            applyFilters();
+            void refreshStateSuggestions();
+            hideSuggestionBox(cityList);
+        });
+
+        cityFilter.addEventListener("input", () => {
+            applyFilters();
+            void refreshCitySuggestions();
+        });
+
+        typeFilter.addEventListener("focus", () => {
+            refreshTypeSuggestions();
+        });
+
+        workModeFilter.addEventListener("focus", () => {
+            refreshWorkModeSuggestions();
+        });
+
+        countryFilter.addEventListener("focus", () => {
+            void refreshCountrySuggestions();
+        });
+
+        stateFilter.addEventListener("focus", () => {
+            void refreshStateSuggestions();
+        });
+
+        cityFilter.addEventListener("focus", () => {
+            void refreshCitySuggestions();
+        });
+
+        typeFilter.addEventListener("change", () => {
+            const matched = findFilterOption(typeOptions, typeFilter.value);
+            if (matched) {
+                setFilterInputOption(typeFilter, matched);
+            } else if (!String(typeFilter.value || "").trim()) {
+                setFilterInputOption(typeFilter, typeOptions[0]);
+            }
+            applyFiltersAndSuggestions();
+        });
+
+        workModeFilter.addEventListener("change", () => {
+            const matched = findFilterOption(workModeOptions, workModeFilter.value);
+            if (matched) {
+                setFilterInputOption(workModeFilter, matched);
+            } else if (!String(workModeFilter.value || "").trim()) {
+                setFilterInputOption(workModeFilter, workModeOptions[0]);
+            }
+            applyFiltersAndSuggestions();
+        });
+
+        countryFilter.addEventListener("change", async () => {
+            const countryMatches = await hasExactLocation("countries", countryFilter.value);
+            if (!countryMatches) {
+                stateFilter.value = "";
+                cityFilter.value = "";
+            } else {
+                const stateMatches = await hasExactLocation("states", stateFilter.value, {
+                    country: countryFilter.value,
+                });
+                if (!stateMatches) cityFilter.value = "";
+            }
+            applyFiltersAndSuggestions();
+        });
+
+        stateFilter.addEventListener("change", async () => {
+            const stateMatches = await hasExactLocation("states", stateFilter.value, {
+                country: countryFilter.value,
+            });
+            if (!stateMatches) cityFilter.value = "";
+            applyFiltersAndSuggestions();
+        });
+
+        cityFilter.addEventListener("change", applyFiltersAndSuggestions);
+
+        document.addEventListener("mousedown", (event) => {
+            if (filterPanel.hasAttribute("hidden")) return;
+            if (!typeFilter.contains(event.target) && !typeList.contains(event.target)) {
+                hideSuggestionBox(typeList);
+            }
+            if (!workModeFilter.contains(event.target) && !workModeList.contains(event.target)) {
+                hideSuggestionBox(workModeList);
+            }
+            if (!countryFilter.contains(event.target) && !countryList.contains(event.target)) {
+                hideSuggestionBox(countryList);
+            }
+            if (!stateFilter.contains(event.target) && !stateList.contains(event.target)) {
+                hideSuggestionBox(stateList);
+            }
+            if (!cityFilter.contains(event.target) && !cityList.contains(event.target)) {
+                hideSuggestionBox(cityList);
+            }
+            if (filterPanel.contains(event.target) || filterToggle.contains(event.target)) return;
+            setFilterPanelOpen(false);
+        });
+
+        applyFilters();
+    })();
+</script>
 {% endif %}
 
 {% endblock %}

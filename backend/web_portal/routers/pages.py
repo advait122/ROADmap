@@ -3,7 +3,7 @@ import json
 import time
 from urllib.parse import quote_plus
 
-from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi import APIRouter, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
@@ -19,6 +19,7 @@ from backend.roadmap_engine.services import (
     chatbot_service,
     company_service,
     dashboard_service,
+    location_catalog_service,
     matching_service,
     onboarding_service,
 )
@@ -71,6 +72,64 @@ def _student_or_404(student_id: int) -> dict:
     if student is None:
         raise HTTPException(status_code=404, detail="Student not found.")
     return student
+
+
+def _assessment_for_student_or_404(student_id: int, assessment_id: int) -> dict:
+    from backend.roadmap_engine.storage import assessment_repo, goals_repo
+
+    goal = goals_repo.get_active_goal(student_id)
+    if goal is None:
+        raise HTTPException(status_code=404, detail="Active goal not found.")
+
+    assessment = assessment_repo.get_assessment(assessment_id)
+    if assessment is None or assessment["goal_id"] != goal["id"]:
+        raise HTTPException(status_code=404, detail="Assessment not found.")
+    return assessment
+
+
+def _assessment_review(assessment: dict) -> dict:
+    questions = assessment.get("questions", []) or []
+    answer_key = assessment.get("answer_key", []) or []
+    student_answers = assessment.get("student_answers", []) or []
+
+    reviewed_questions: list[dict] = []
+    correct_count = 0
+
+    for idx, question in enumerate(questions):
+        expected = answer_key[idx] if idx < len(answer_key) else None
+        selected = student_answers[idx] if idx < len(student_answers) else None
+        is_correct = expected is not None and selected is not None and selected == expected
+        if is_correct:
+            correct_count += 1
+
+        reviewed_options = []
+        for option_idx, option_text in enumerate(question.get("options", [])):
+            reviewed_options.append(
+                {
+                    "text": str(option_text),
+                    "is_selected": selected is not None and option_idx == selected,
+                    "is_correct": expected is not None and option_idx == expected,
+                }
+            )
+
+        reviewed_questions.append(
+            {
+                "topic": str(question.get("topic", "General")),
+                "difficulty": str(question.get("difficulty", "basic")),
+                "question": str(question.get("question", "")),
+                "options": reviewed_options,
+                "is_correct": is_correct,
+            }
+        )
+
+    total_questions = len(answer_key)
+    wrong_count = max(total_questions - correct_count, 0)
+    return {
+        "questions": reviewed_questions,
+        "total_questions": total_questions,
+        "correct_count": correct_count,
+        "wrong_count": wrong_count,
+    }
 
 
 def _current_company(request: Request) -> dict | None:
@@ -505,6 +564,47 @@ def dashboard_page(
     )
 
 
+@router.get("/students/{student_id}/locations/countries", response_class=JSONResponse)
+def country_location_suggestions(
+    student_id: int,
+    q: str = "",
+    limit: int = Query(default=500, ge=1, le=10000),
+) -> JSONResponse:
+    _student_or_404(student_id)
+    items = location_catalog_service.search_countries(q=q, limit=limit)
+    return JSONResponse({"items": items})
+
+
+@router.get("/students/{student_id}/locations/states", response_class=JSONResponse)
+def state_location_suggestions(
+    student_id: int,
+    country: str = "",
+    q: str = "",
+    limit: int = Query(default=500, ge=1, le=10000),
+) -> JSONResponse:
+    _student_or_404(student_id)
+    items = location_catalog_service.search_states(country=country, q=q, limit=limit)
+    return JSONResponse({"items": items})
+
+
+@router.get("/students/{student_id}/locations/cities", response_class=JSONResponse)
+def city_location_suggestions(
+    student_id: int,
+    country: str = "",
+    state: str = "",
+    q: str = "",
+    limit: int = Query(default=500, ge=1, le=10000),
+) -> JSONResponse:
+    _student_or_404(student_id)
+    items = location_catalog_service.search_cities(
+        country=country,
+        state=state,
+        q=q,
+        limit=limit,
+    )
+    return JSONResponse({"items": items})
+
+
 @router.post("/students/{student_id}/tasks/{task_id}/completion")
 def update_task_completion(
     student_id: int,
@@ -661,6 +761,45 @@ def skill_test_page(request: Request, student_id: int, goal_skill_id: int) -> HT
             "asset_version": _asset_version(),
             "student": student,
             "assessment": assessment,
+            "show_results": bool(assessment.get("submitted_at")),
+            "assessment_review": _assessment_review(assessment) if assessment.get("submitted_at") else None,
+            "test_duration_minutes": assessment_service.TEST_DURATION_MINUTES,
+            "test_deadline_iso": assessment_service.assessment_deadline_iso(assessment),
+            "chatbot_context": chatbot_context,
+            "active_section": "tests",
+        },
+    )
+
+
+@router.get("/students/{student_id}/skills/tests/{assessment_id}/result", response_class=HTMLResponse)
+def skill_test_result_page(
+    request: Request,
+    student_id: int,
+    assessment_id: int,
+) -> HTMLResponse:
+    student = _student_or_404(student_id)
+    assessment = _assessment_for_student_or_404(student_id, assessment_id)
+
+    if not assessment.get("submitted_at"):
+        return RedirectResponse(
+            url=f"/students/{student_id}/skills/{assessment['goal_skill_id']}/test",
+            status_code=303,
+        )
+
+    try:
+        chatbot_context = chatbot_service.get_chat_panel(student_id)
+    except ValueError:
+        chatbot_context = None
+
+    return templates.TemplateResponse(
+        "skill_test.html",
+        {
+            "request": request,
+            "asset_version": _asset_version(),
+            "student": student,
+            "assessment": assessment,
+            "show_results": True,
+            "assessment_review": _assessment_review(assessment),
             "chatbot_context": chatbot_context,
             "active_section": "tests",
         },
@@ -674,16 +813,21 @@ async def skill_test_submit(
     assessment_id: int,
 ) -> RedirectResponse:
     _student_or_404(student_id)
+    assessment = _assessment_for_student_or_404(student_id, assessment_id)
     payload = await request.form()
 
     selected_answers: list[int] = []
-    idx = 0
-    while True:
+    total_questions = len(assessment.get("answer_key", []) or [])
+    for idx in range(total_questions):
         key = f"answer_{idx}"
-        if key not in payload:
-            break
-        selected_answers.append(int(payload[key]))
-        idx += 1
+        raw_value = payload.get(key)
+        if raw_value is None:
+            selected_answers.append(-1)
+            continue
+        try:
+            selected_answers.append(int(raw_value))
+        except (TypeError, ValueError):
+            selected_answers.append(-1)
 
     try:
         assessment_service.submit_assessment(student_id, assessment_id, selected_answers)
@@ -695,4 +839,7 @@ async def skill_test_submit(
             status_code=303,
         )
 
-    return RedirectResponse(url=f"/students/{student_id}/dashboard?section=tests", status_code=303)
+    return RedirectResponse(
+        url=f"/students/{student_id}/skills/tests/{assessment_id}/result",
+        status_code=303,
+    )
