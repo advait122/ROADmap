@@ -140,7 +140,7 @@
 </section>
 {% endif %}
 
-{% if dashboard.company_job_invites %}
+{% if section == "opportunities" and dashboard.company_job_invites %}
 <section class="page-card p-3 mb-4">
     <h3 class="h6 mb-3">Company Invitations</h3>
     <div class="company-invite-grid">
