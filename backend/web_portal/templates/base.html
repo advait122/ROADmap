@@ -16,7 +16,7 @@
             {% if company is defined and company and not student %}
                 {% set brand_href = "/company/dashboard" %}
             {% endif %}
-            <a href="{{ brand_href }}" class="navbar-brand fw-semibold text-decoration-none">CodeMap</a>
+            <a href="{{ brand_href }}" class="navbar-brand fw-semibold text-decoration-none codemap-wordmark">CodeMap</a>
             {% if student %}
                 {% set dashboard_url = "/students/" ~ student.id ~ "/dashboard" %}
                 {% set current_section = active_section if active_section else "roadmap" %}
@@ -652,3 +652,5 @@
     </script>
 </body>
 </html>
+
+

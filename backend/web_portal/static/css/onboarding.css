@@ -18,11 +18,8 @@
 }
 
 .onboarding-page {
-    background-color: #f4f4f4;
-    background-image: url("/static/photos/science-doodle-exact.jpg");
-    background-size: auto;
-    background-repeat: repeat;
-    background-position: center top;
+    min-height: 100vh;
+    background: #ffffff;
 }
 
 .onboarding-page .container {
@@ -415,6 +412,40 @@
     vertical-align: middle;
 }
 
+.onboarding-next-btn {
+    gap: 0.55rem;
+}
+
+.onboarding-next-arrow {
+    position: relative;
+    width: 1rem;
+    height: 0.72rem;
+    display: inline-block;
+    flex: 0 0 auto;
+}
+
+.onboarding-next-arrow::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 50%;
+    width: 0.62rem;
+    border-top: 2px solid currentColor;
+    transform: translateY(-50%);
+}
+
+.onboarding-next-arrow::after {
+    content: "";
+    position: absolute;
+    right: 0.04rem;
+    top: 50%;
+    width: 0.44rem;
+    height: 0.44rem;
+    border-top: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    transform: translateY(-50%) rotate(45deg);
+}
+
 .onboarding-toggle-group {
     display: flex;
     gap: 0.65rem;
@@ -531,5 +562,558 @@ textarea.onboarding-input {
     .step-btn {
         width: 100%;
         min-width: 0;
+    }
+}
+
+/* Modern onboarding + company auth redesign */
+.student-onboarding-page,
+.company-auth-page {
+    background: #f5f0e8;
+    color: #1f2430;
+    font-family: inherit;
+}
+
+.student-onboarding-page main.container,
+.company-auth-page main.container {
+    max-width: 1280px;
+    padding-top: 1.2rem;
+}
+
+.student-onboarding-page .setup-shell,
+.company-auth-page .setup-shell {
+    padding-top: 0.5rem;
+}
+
+.student-onboarding-page .setup-card-modern,
+.company-auth-page .setup-card-modern {
+    display: grid;
+    grid-template-columns: 42% 58%;
+    border: 1px solid #d4cec4;
+    border-radius: 28px;
+    box-shadow: 0 20px 36px rgba(16, 22, 33, 0.08);
+    background: #ece8e2;
+    overflow: hidden;
+    min-height: 700px;
+}
+
+.student-onboarding-page .setup-left-showcase,
+.company-auth-page .setup-left-showcase {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding: 2.6rem 2.3rem 2.2rem;
+    background:
+        radial-gradient(circle at 70% 6%, rgba(204, 157, 56, 0.14) 0%, rgba(204, 157, 56, 0) 36%),
+        radial-gradient(circle at 8% 96%, rgba(201, 159, 68, 0.16) 0%, rgba(201, 159, 68, 0) 40%),
+        linear-gradient(180deg, #07090d 0%, #04060a 100%);
+    color: #f7f4ee;
+    border-radius: 28px 0 0 28px;
+}
+
+.student-onboarding-page .showcase-brand,
+.company-auth-page .showcase-brand {
+    font-size: clamp(2.6rem, 5vw, 3.35rem);
+    font-weight: 800;
+    line-height: 0.95;
+    margin-bottom: 2.1rem;
+    letter-spacing: 0.01em;
+}
+
+.student-onboarding-page .student-track {
+    display: flex;
+    flex-direction: column;
+    gap: 0.95rem;
+    max-width: 360px;
+    margin-bottom: auto;
+}
+
+.student-onboarding-page .track-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 52px 1fr;
+    align-items: center;
+    gap: 0.9rem;
+}
+
+.student-onboarding-page .track-row:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: 25px;
+    top: 44px;
+    width: 2px;
+    height: 44px;
+    background: rgba(190, 191, 196, 0.22);
+}
+
+.student-onboarding-page .track-point {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    border: 2px solid #2f333b;
+    background: #181b22;
+    color: #677083;
+    font-size: 1.15rem;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+}
+
+.student-onboarding-page .track-row.is-active .track-point {
+    background: #c8ab4d;
+    border-color: #d7bf66;
+    color: #121212;
+}
+
+.student-onboarding-page .track-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.22rem;
+    padding: 0.58rem 0.86rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(23, 26, 32, 0.72);
+}
+
+.student-onboarding-page .track-card strong {
+    font-size: 1.02rem;
+    font-weight: 700;
+    color: #f4f3f1;
+    line-height: 1.2;
+}
+
+.student-onboarding-page .track-card span {
+    color: #80879a;
+    font-size: 0.95rem;
+}
+
+.student-onboarding-page .setup-copy-showcase,
+.company-auth-page .setup-copy-showcase {
+    position: static;
+    left: auto;
+    right: auto;
+    bottom: auto;
+    margin-top: 2rem;
+    color: #ede8df;
+}
+
+.student-onboarding-page .setup-copy-showcase h3,
+.company-auth-page .setup-copy-showcase h3 {
+    margin: 0;
+    font-size: clamp(1.35rem, 2.2vw, 2.1rem);
+    font-weight: 700;
+    line-height: 1.12;
+    letter-spacing: 0;
+    color: #f3efe8;
+}
+
+.student-onboarding-page .setup-copy-showcase p,
+.company-auth-page .setup-copy-showcase p {
+    margin-top: 0.95rem;
+    font-size: 1.06rem;
+    color: #787f8f;
+    line-height: 1.45;
+}
+
+.student-onboarding-page .setup-right-modern,
+.company-auth-page .setup-right-modern {
+    padding: 2.8rem 3.1rem 2.55rem;
+    background: #ece8e2;
+    border-radius: 0 28px 28px 0;
+}
+
+.student-onboarding-page .setup-step-label {
+    margin: 0 0 0.7rem;
+    font-size: 1.12rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #c2a54f;
+}
+
+.student-onboarding-page .setup-title,
+.company-auth-page .setup-title {
+    margin: 0;
+    color: #060b14;
+    font-weight: 800;
+    line-height: 1.04;
+    letter-spacing: 0;
+}
+
+.student-onboarding-page .setup-title {
+    font-size: clamp(2.5rem, 4.7vw, 3.7rem);
+}
+
+.student-onboarding-page .setup-subtitle,
+.company-auth-page .setup-subtitle {
+    margin: 0.75rem 0 1.05rem;
+    color: #6f7785;
+    font-size: 1.08rem;
+    line-height: 1.45;
+}
+
+.student-onboarding-page .step-tracker {
+    display: flex;
+    align-items: center;
+    gap: 0.58rem;
+    margin: 0 0 1.8rem;
+}
+
+.student-onboarding-page .tracker-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #cec8be;
+    box-shadow: none;
+}
+
+.student-onboarding-page .tracker-dot.active {
+    background: #c8aa4b;
+    box-shadow: none;
+}
+
+.student-onboarding-page .form-label,
+.company-auth-page .form-label {
+    color: #4f5662;
+    font-size: 0.94rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+}
+
+.student-onboarding-page .onboarding-input,
+.student-onboarding-page .glass-select-trigger,
+.company-auth-page .onboarding-input {
+    border: 1px solid #c8c2b8;
+    border-radius: 14px;
+    background: #ffffff;
+    color: #1f2530;
+    min-height: 54px;
+    font-size: 1.1rem;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
+.student-onboarding-page .onboarding-input::placeholder,
+.student-onboarding-page .glass-select-trigger,
+.company-auth-page .onboarding-input::placeholder {
+    color: #a3a5ab;
+}
+
+.student-onboarding-page .onboarding-input:hover,
+.student-onboarding-page .onboarding-input:focus,
+.student-onboarding-page .glass-select-trigger:hover,
+.student-onboarding-page .glass-select-trigger:focus,
+.company-auth-page .onboarding-input:hover,
+.company-auth-page .onboarding-input:focus {
+    border-color: #a9a29a;
+    background: #ffffff;
+    color: #1f2530;
+    box-shadow: 0 0 0 0.2rem rgba(12, 19, 31, 0.08);
+}
+
+.student-onboarding-page .glass-select-menu {
+    border: 1px solid #c8c2b8;
+    border-radius: 14px;
+    background: #ffffff;
+    box-shadow: 0 16px 24px rgba(16, 22, 33, 0.16);
+}
+
+.student-onboarding-page .glass-option {
+    border-bottom-color: #ece7df;
+    color: #2c3240;
+}
+
+.student-onboarding-page .glass-option:hover {
+    background: #f4f2ed;
+}
+
+.student-onboarding-page .glass-option.active {
+    background: #ebe5d8;
+    color: #101625;
+}
+
+.student-onboarding-page .btn-primary,
+.company-auth-page .btn-primary {
+    border: 1px solid #05070b;
+    border-radius: 14px;
+    background: #05070b;
+    color: #ffffff;
+    font-weight: 700;
+    min-height: 54px;
+    font-size: 1.14rem;
+}
+
+.student-onboarding-page .btn-primary:hover,
+.student-onboarding-page .btn-primary:focus,
+.company-auth-page .btn-primary:hover,
+.company-auth-page .btn-primary:focus {
+    border-color: #0e1118;
+    background: #0e1118;
+    color: #ffffff;
+    box-shadow: 0 10px 18px rgba(10, 14, 22, 0.2);
+}
+
+.student-onboarding-page .btn-outline-secondary,
+.company-auth-page .btn-outline-secondary {
+    border: 1px solid #c5b79d;
+    color: #4c4f57;
+    background: #eee7d8;
+    border-radius: 14px;
+    min-height: 54px;
+    font-weight: 700;
+    font-size: 0.92rem;
+}
+
+.student-onboarding-page .btn-outline-secondary:hover,
+.student-onboarding-page .btn-outline-secondary:focus,
+.company-auth-page .btn-outline-secondary:hover,
+.company-auth-page .btn-outline-secondary:focus {
+    border-color: #ac9c7f;
+    color: #30343b;
+    background: #e3dccd;
+    box-shadow: none;
+}
+
+.student-onboarding-page .step-btn,
+.company-auth-page .step-btn {
+    min-width: 0;
+}
+
+.student-onboarding-page .step-pane[data-step="1"] .step-btn {
+    width: 100%;
+}
+
+.student-onboarding-page .step-actions {
+    display: flex;
+    gap: 0.82rem;
+    justify-content: flex-end;
+}
+
+.student-onboarding-page .step-actions .step-btn {
+    min-width: 196px;
+}
+
+.student-onboarding-page .onboarding-toggle-pill {
+    border-color: #c8b489;
+    background: #f0e6d0;
+    color: #5e5648;
+}
+
+.student-onboarding-page .onboarding-toggle-pill input {
+    border-color: #b89b5b;
+}
+
+.student-onboarding-page .onboarding-toggle-pill input:checked {
+    background: #1a1f2a;
+    box-shadow: 0 0 0 2px rgba(26, 31, 42, 0.14);
+}
+
+.student-onboarding-page .skill-bubble {
+    border-color: #ccb989;
+    background: #eee3ca;
+    color: #5f5647;
+    font-size: 0.92rem;
+}
+
+.student-onboarding-page .skill-check:checked + .skill-bubble {
+    border-color: #1c2230;
+    background: #dde3ef;
+    color: #1c2230;
+}
+
+.student-onboarding-page .alert-danger,
+.company-auth-page .alert-danger {
+    border: 1px solid rgba(217, 83, 79, 0.28);
+    background: rgba(217, 83, 79, 0.1);
+    color: #962d2b;
+}
+
+.student-onboarding-page.page-exit .setup-card-modern,
+.company-auth-page.page-exit .setup-card-modern {
+    opacity: 0;
+    transform: translateY(14px) scale(0.988);
+    filter: blur(2px);
+}
+
+@media (max-width: 1200px) {
+    .student-onboarding-page .setup-right-modern,
+    .company-auth-page .setup-right-modern {
+        padding: 2.3rem 2.2rem;
+    }
+}
+
+@media (max-width: 991px) {
+    .student-onboarding-page .setup-card-modern,
+    .company-auth-page .setup-card-modern {
+        grid-template-columns: 1fr;
+        min-height: 0;
+    }
+
+    .student-onboarding-page .setup-left-showcase,
+    .company-auth-page .setup-left-showcase {
+        border-radius: 28px 28px 0 0;
+        min-height: 360px;
+    }
+
+    .student-onboarding-page .setup-right-modern,
+    .company-auth-page .setup-right-modern {
+        border-radius: 0 0 28px 28px;
+        padding: 1.7rem 1.35rem 1.5rem;
+    }
+
+    .student-onboarding-page .setup-subtitle,
+    .company-auth-page .setup-subtitle {
+        font-size: 1.02rem;
+    }
+
+    .student-onboarding-page .step-actions {
+        flex-direction: column;
+    }
+
+    .student-onboarding-page .step-actions .step-btn {
+        min-width: 0;
+        width: 100%;
+    }
+
+    .student-onboarding-page .student-track {
+        max-width: 100%;
+    }
+}
+
+
+@media (min-width: 992px) {
+    .student-onboarding-page,
+    .company-auth-page {
+        overflow: hidden;
+    }
+
+    .student-onboarding-page main.container,
+    .company-auth-page main.container {
+        height: calc(100vh - 60px);
+        padding-top: 0.8rem;
+        padding-bottom: 0.8rem !important;
+        overflow: hidden;
+        display: flex;
+        align-items: center;
+    }
+
+    .student-onboarding-page .setup-shell,
+    .company-auth-page .setup-shell {
+        height: 100%;
+        width: 100%;
+        padding-top: 0;
+        margin: 0;
+        display: flex;
+        align-items: center;
+    }
+
+    .student-onboarding-page .setup-card-modern,
+    .company-auth-page .setup-card-modern {
+        width: 100%;
+        height: min(620px, calc(100vh - 150px));
+        min-height: 0;
+    }
+
+    .student-onboarding-page .setup-right-modern,
+    .company-auth-page .setup-right-modern {
+        overflow-y: auto;
+        padding-bottom: 1.25rem;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .student-onboarding-page .setup-right-modern::-webkit-scrollbar,
+    .company-auth-page .setup-right-modern::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;
+    }
+}
+
+
+
+
+@media (min-width: 992px) {
+    .student-onboarding-page .setup-right.setup-right-modern {
+        overflow-y: hidden;
+        padding: 2.05rem 2.65rem 1rem;
+    }
+
+    .student-onboarding-page .setup-title {
+        font-size: clamp(2.05rem, 3.2vw, 3rem);
+        line-height: 1.02;
+    }
+
+    .student-onboarding-page .setup-subtitle {
+        font-size: 0.98rem;
+        margin: 0.45rem 0 0.7rem;
+    }
+
+    .student-onboarding-page .setup-step-label {
+        font-size: 0.92rem;
+        margin: 0 0 0.48rem;
+    }
+
+    .student-onboarding-page .step-tracker {
+        margin: 0 0 0.92rem;
+    }
+
+    .student-onboarding-page .step-pane .row {
+        --bs-gutter-x: 0.9rem;
+        --bs-gutter-y: 0.62rem;
+    }
+
+    .student-onboarding-page .form-label {
+        margin-bottom: 0.3rem;
+        font-size: 0.86rem;
+    }
+
+    .student-onboarding-page .onboarding-input,
+    .student-onboarding-page .glass-select-trigger,
+    .student-onboarding-page .btn-primary,
+    .student-onboarding-page .btn-outline-secondary {
+        min-height: 44px;
+        font-size: 0.98rem;
+    }
+
+    .student-onboarding-page .onboarding-toggle-group {
+        min-height: 44px;
+    }
+
+    .student-onboarding-page .onboarding-toggle-pill {
+        padding: 0.28rem 0.6rem;
+        font-size: 0.88rem;
+    }
+
+    .student-onboarding-page .step-pane[data-step="1"] .step-btn {
+        margin-top: 0.95rem !important;
+    }
+
+    .student-onboarding-page .step-actions.mt-4 {
+        margin-top: 0.82rem !important;
+    }
+
+    .student-onboarding-page .step-actions .step-btn {
+        min-width: 170px;
+    }
+
+    .student-onboarding-page textarea.onboarding-input {
+        min-height: 46px !important;
+        height: 46px !important;
+    }
+
+    .student-onboarding-page .skill-bubbles {
+        max-height: 120px;
+        overflow-y: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .student-onboarding-page .skill-bubbles::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;
     }
 }

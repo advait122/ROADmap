@@ -21,6 +21,13 @@
     --accent: var(--autumn-2);
     --accent-dark: var(--autumn-1);
     --accent-soft: rgba(231, 119, 23, 0.16);
+    --codemap-wordmark-font: "Trebuchet MS", "Segoe UI", sans-serif;
+}
+
+.codemap-wordmark {
+    font-family: var(--codemap-wordmark-font);
+    font-weight: 800;
+    letter-spacing: 0.01em;
 }
 
 body {
@@ -62,6 +69,7 @@ nav.navbar .container {
 nav.navbar .navbar-brand {
     font-size: 1.55rem;
     font-weight: 800 !important;
+    font-family: var(--codemap-wordmark-font);
     letter-spacing: 0.01em;
     margin-right: 0;
     justify-self: start;
@@ -761,12 +769,30 @@ body.summary-modal-open {
     font-weight: 700;
     line-height: 1;
     padding: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.42rem;
+}
+
+.ribbon-company-link::after {
+    content: "";
+    width: 0.5rem;
+    height: 0.5rem;
+    border-top: 2px solid currentColor;
+    border-right: 2px solid currentColor;
+    transform: rotate(45deg);
+    transition: transform 0.2s ease;
 }
 
 .ribbon-company-link:hover,
 .ribbon-company-link:focus {
     color: #e2a54d;
     text-decoration: none;
+}
+
+.ribbon-company-link:hover::after,
+.ribbon-company-link:focus::after {
+    transform: translateX(2px) rotate(45deg);
 }
 
 .notification-shell {
@@ -1493,3 +1519,4 @@ nav.navbar .ribbon-playlist-dropdown.open .ribbon-playlist-toggle {
     color: #e2a54d;
     background-color: rgba(226, 165, 77, 0.12);
 }
+

@@ -580,3 +580,657 @@ body.dashboard-page.company-page .page-card {
         grid-template-columns: 1fr;
     }
 }
+
+/* Company auth redesign */
+.company-auth-page .setup-card-modern.company-auth-layout {
+    min-height: 700px;
+}
+
+.company-auth-page .talent-stack {
+    display: flex;
+    flex-direction: column;
+    gap: 0.78rem;
+    margin-top: 0.35rem;
+    margin-bottom: auto;
+    max-width: 390px;
+}
+
+.company-auth-page .talent-chip-card {
+    display: grid;
+    grid-template-columns: 52px 1fr auto;
+    align-items: center;
+    gap: 0.78rem;
+    padding: 0.72rem 0.9rem;
+    border-radius: 16px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(22, 25, 30, 0.82);
+    color: #f3f4f7;
+}
+
+.company-auth-page .talent-avatar {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-size: 1.04rem;
+    font-weight: 700;
+    color: #d2b65b;
+    border: 1px solid rgba(210, 182, 91, 0.35);
+    background: rgba(210, 182, 91, 0.08);
+}
+
+.company-auth-page .talent-avatar.is-green {
+    color: #8bc68d;
+    border-color: rgba(139, 198, 141, 0.34);
+    background: rgba(139, 198, 141, 0.1);
+}
+
+.company-auth-page .talent-avatar.is-blue {
+    color: #8cb5f2;
+    border-color: rgba(140, 181, 242, 0.34);
+    background: rgba(140, 181, 242, 0.1);
+}
+
+.company-auth-page .talent-meta h4 {
+    margin: 0;
+    color: #f5f5f5;
+    font-size: 1.04rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.company-auth-page .talent-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin-top: 0.35rem;
+}
+
+.company-auth-page .talent-tags span {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #8a93a6;
+    border: 1px solid rgba(140, 148, 163, 0.28);
+    border-radius: 999px;
+    padding: 0.1rem 0.52rem;
+}
+
+.company-auth-page .talent-score {
+    color: #d2b65b;
+    font-size: 1.18rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: right;
+}
+
+.company-auth-page .talent-score small {
+    display: block;
+    margin-top: 0.2rem;
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: #8a93a6;
+}
+
+.company-auth-page .company-auth-right .setup-title {
+    font-size: clamp(2.6rem, 4.2vw, 3.95rem);
+}
+
+.company-auth-page .company-auth-right .setup-subtitle {
+    font-size: 1.08rem;
+    margin-bottom: 1.18rem;
+}
+
+.company-auth-page .company-auth-kicker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.42rem;
+    margin: 0 0 0.82rem;
+    border: 1px solid #d8c28a;
+    border-radius: 999px;
+    background: #e9e0cd;
+    color: #ba9a45;
+    font-size: 0.98rem;
+    font-weight: 700;
+    line-height: 1;
+    padding: 0.4rem 0.9rem;
+}
+
+.company-auth-page .company-auth-kicker::before {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #c6a74f;
+}
+
+.company-auth-page .company-auth-tabs {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
+    gap: 0.35rem;
+    padding: 0.35rem;
+    margin: 0 0 1.22rem;
+    border-radius: 14px;
+    background: #ddd5ca;
+}
+
+.company-auth-page .company-auth-tab {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 46px;
+    border-radius: 11px;
+    color: #8c8f96;
+    text-decoration: none;
+    font-size: 1.04rem;
+    font-weight: 700;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.company-auth-page .company-auth-tab:hover,
+.company-auth-page .company-auth-tab:focus {
+    color: #22262e;
+}
+
+.company-auth-page .company-auth-tab.is-active {
+    background: #05070b;
+    color: #ffffff;
+}
+
+.company-auth-page .company-auth-card {
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+}
+
+.company-auth-page .company-auth-card-single {
+    max-width: none;
+}
+
+.company-auth-page .company-auth-form .mb-3 {
+    margin-bottom: 1.1rem !important;
+}
+
+.company-auth-page .company-auth-actions {
+    margin-top: 0.25rem;
+}
+
+.company-auth-page .company-auth-primary,
+.company-auth-page .company-auth-secondary {
+    width: 100%;
+}
+
+.company-auth-page .company-auth-divider {
+    position: relative;
+    margin: 1.16rem 0 1.06rem;
+    text-align: center;
+}
+
+.company-auth-page .company-auth-divider::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: 50%;
+    height: 1px;
+    background: #d0cbc3;
+}
+
+.company-auth-page .company-auth-divider span {
+    position: relative;
+    background: #ece8e2;
+    color: #b2b2b2;
+    font-size: 0.92rem;
+    padding: 0 0.7rem;
+}
+
+.company-auth-page .company-auth-secondary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+}
+
+.company-auth-page .company-auth-footnote {
+    margin: 0.86rem 0 0;
+    text-align: center;
+    font-size: 0.98rem;
+    color: #888c94;
+}
+
+.company-auth-page .company-auth-footnote a {
+    color: #c1a04a;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.company-auth-page .company-auth-footnote a:hover,
+.company-auth-page .company-auth-footnote a:focus {
+    color: #a88839;
+}
+
+@media (max-width: 991px) {
+    .company-auth-page .talent-stack {
+        max-width: 100%;
+    }
+
+    .company-auth-page .company-auth-right .setup-title {
+        font-size: clamp(2rem, 8vw, 2.9rem);
+    }
+
+    .company-auth-page .company-auth-tab {
+        font-size: 0.98rem;
+    }
+}
+
+
+.company-auth-page .setup-right.setup-right-modern {
+    padding: 2.8rem 3.1rem 2.55rem;
+}
+
+.company-auth-page .company-auth-actions {
+    display: block;
+}
+
+@media (max-width: 1200px) {
+    .company-auth-page .setup-right.setup-right-modern {
+        padding: 2.3rem 2.2rem;
+    }
+}
+
+@media (max-width: 991px) {
+    .company-auth-page .setup-right.setup-right-modern {
+        padding: 1.7rem 1.35rem 1.5rem;
+    }
+}
+
+@media (min-width: 992px) {
+    .company-auth-page .setup-card-modern.company-auth-layout {
+        width: 100%;
+        height: min(620px, calc(100vh - 150px));
+        min-height: 0;
+    }
+}
+
+
+
+@media (min-width: 992px) {
+    .company-login-page .setup-right.setup-right-modern {
+        overflow-y: hidden;
+        padding: 2.1rem 2.65rem 1rem;
+    }
+
+    .company-login-page .company-auth-right .setup-title {
+        font-size: clamp(2.15rem, 3.1vw, 3rem);
+        line-height: 1.03;
+    }
+
+    .company-login-page .company-auth-right .setup-subtitle {
+        font-size: 0.98rem;
+        margin: 0.48rem 0 0.82rem;
+    }
+
+    .company-login-page .company-auth-kicker {
+        margin: 0 0 0.54rem;
+        font-size: 0.84rem;
+        padding: 0.28rem 0.7rem;
+    }
+
+    .company-login-page .company-auth-tabs {
+        margin: 0 0 0.84rem;
+        padding: 0.26rem;
+    }
+
+    .company-login-page .company-auth-tab {
+        min-height: 40px;
+        font-size: 0.95rem;
+    }
+
+    .company-login-page .onboarding-input,
+    .company-login-page .btn-primary,
+    .company-login-page .company-auth-secondary {
+        min-height: 46px;
+        font-size: 1rem;
+    }
+
+    .company-login-page .company-auth-form .mb-3 {
+        margin-bottom: 0.72rem !important;
+    }
+
+    .company-login-page .company-auth-divider {
+        margin: 0.84rem 0 0.72rem;
+    }
+
+    .company-login-page .company-auth-footnote {
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+    }
+}
+
+@media (min-width: 992px) {
+    .company-signup-page .setup-right.setup-right-modern {
+        overflow-y: hidden;
+        padding: 1.9rem 2.55rem 0.8rem;
+    }
+
+    .company-signup-page .company-auth-right .setup-title {
+        font-size: clamp(1.95rem, 2.8vw, 2.65rem);
+        line-height: 1.02;
+    }
+
+    .company-signup-page .company-auth-right .setup-subtitle {
+        font-size: 0.94rem;
+        margin: 0.35rem 0 0.72rem;
+    }
+
+    .company-signup-page .company-auth-kicker {
+        margin: 0 0 0.44rem;
+        font-size: 0.8rem;
+        padding: 0.24rem 0.64rem;
+    }
+
+    .company-signup-page .company-auth-tabs {
+        margin: 0 0 0.72rem;
+        padding: 0.24rem;
+    }
+
+    .company-signup-page .company-auth-tab {
+        min-height: 38px;
+        font-size: 0.9rem;
+    }
+
+    .company-signup-page .form-label {
+        margin-bottom: 0.3rem;
+        font-size: 0.86rem;
+    }
+
+    .company-signup-page .onboarding-input,
+    .company-signup-page .btn-primary,
+    .company-signup-page .company-auth-secondary {
+        min-height: 42px;
+        font-size: 0.95rem;
+    }
+
+    .company-signup-page .company-auth-form .mb-3 {
+        margin-bottom: 0.56rem !important;
+    }
+
+    .company-signup-page .company-auth-divider {
+        margin: 0.64rem 0 0.58rem;
+    }
+
+    .company-signup-page .company-auth-footnote {
+        margin-top: 0.38rem;
+        font-size: 0.86rem;
+    }
+}
+
+/* Company job setup redesign */
+.company-job-page .setup-card-modern.company-job-layout {
+    min-height: 640px;
+}
+
+.company-job-page .company-job-showcase {
+    padding: 2.4rem 2.1rem 2rem;
+}
+
+.company-job-page .job-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 0.86rem;
+    margin-top: 0.4rem;
+    margin-bottom: auto;
+    max-width: 390px;
+}
+
+.company-job-page .job-flow-row {
+    position: relative;
+    display: grid;
+    grid-template-columns: 48px 1fr;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.company-job-page .job-flow-row:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    left: 23px;
+    top: 40px;
+    width: 2px;
+    height: 34px;
+    background: rgba(174, 179, 190, 0.26);
+}
+
+.company-job-page .job-flow-point {
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    border: 2px solid #2f333b;
+    background: #171b23;
+    color: #677083;
+    font-size: 1.02rem;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+}
+
+.company-job-page .job-flow-row.is-active .job-flow-point {
+    background: #c8ab4d;
+    border-color: #d7bf66;
+    color: #121212;
+}
+
+.company-job-page .job-flow-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.18rem;
+    padding: 0.55rem 0.8rem;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(23, 26, 32, 0.74);
+}
+
+.company-job-page .job-flow-card strong {
+    color: #f4f3f1;
+    font-size: 0.96rem;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.company-job-page .job-flow-card span {
+    color: #8a90a1;
+    font-size: 0.82rem;
+    line-height: 1.3;
+}
+
+.company-job-page .company-job-right .setup-title {
+    font-size: clamp(2.2rem, 3.6vw, 3.3rem);
+    line-height: 1.04;
+}
+
+.company-job-page .company-job-right .setup-subtitle {
+    font-size: 1rem;
+    margin-bottom: 0.8rem;
+}
+
+.company-job-page .company-job-tracker {
+    margin-bottom: 0.95rem !important;
+}
+
+.company-job-page .company-job-form .mb-3 {
+    margin-bottom: 0.9rem !important;
+}
+
+.company-job-page .company-job-skills-list {
+    max-height: 132px;
+    overflow-y: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+}
+
+.company-job-page .company-job-skills-list::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+    display: none;
+}
+
+.company-job-page .company-job-actions {
+    display: flex;
+    gap: 0.78rem;
+    justify-content: flex-end;
+}
+
+.company-job-page .company-job-actions .step-btn {
+    min-width: 188px;
+}
+
+.company-job-page .company-job-summary-card {
+    border: 1px solid rgba(200, 194, 184, 0.95);
+    border-radius: 14px;
+    background: rgba(248, 245, 238, 0.72);
+    padding: 0.72rem 0.85rem;
+}
+
+@media (min-width: 992px) {
+    .company-job-page .setup-right.setup-right-modern {
+        overflow-y: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        padding: 2.05rem 2.55rem 1.05rem;
+    }
+
+    .company-job-page .setup-right.setup-right-modern::-webkit-scrollbar {
+        width: 0;
+        height: 0;
+        display: none;
+    }
+
+    .company-job-page .form-label {
+        margin-bottom: 0.34rem;
+        font-size: 0.86rem;
+    }
+
+    .company-job-page .onboarding-input,
+    .company-job-page .btn-primary,
+    .company-job-page .btn-outline-secondary,
+    .company-job-page .glass-select-trigger {
+        min-height: 44px;
+        font-size: 0.96rem;
+    }
+
+    .company-job-page .company-toggle-pill {
+        padding: 0.28rem 0.62rem;
+        font-size: 0.88rem;
+    }
+
+    .company-job-page .setup-copy-showcase h3 {
+        font-size: clamp(1.28rem, 2.05vw, 1.9rem);
+    }
+
+    .company-job-page .setup-copy-showcase p {
+        font-size: 0.92rem;
+        margin-top: 0.72rem;
+    }
+}
+
+@media (max-width: 991px) {
+    .company-job-page .company-job-actions {
+        flex-direction: column;
+    }
+
+    .company-job-page .company-job-actions .step-btn {
+        width: 100%;
+        min-width: 0;
+    }
+
+    .company-job-page .job-flow {
+        max-width: 100%;
+    }
+}
+
+@media (min-width: 992px) {
+    .company-job-page .setup-right.setup-right-modern {
+        overflow-y: hidden !important;
+        padding: 1.72rem 2.35rem 0.78rem !important;
+    }
+
+    .company-job-page .company-job-right .setup-title {
+        font-size: clamp(1.92rem, 2.85vw, 2.65rem);
+        line-height: 1.02;
+    }
+
+    .company-job-page .company-job-right .setup-subtitle {
+        font-size: 0.92rem;
+        margin: 0.34rem 0 0.56rem;
+    }
+
+    .company-job-page .company-auth-kicker {
+        margin: 0 0 0.34rem;
+        font-size: 0.8rem;
+        padding: 0.22rem 0.64rem;
+    }
+
+    .company-job-page .company-job-tracker {
+        margin-bottom: 0.58rem !important;
+    }
+
+    .company-job-page .form-label {
+        margin-bottom: 0.26rem;
+        font-size: 0.82rem;
+    }
+
+    .company-job-page .skill-bubbles {
+        gap: 0.42rem;
+    }
+
+    .company-job-page .skill-bubble {
+        padding: 0.28rem 0.62rem;
+        font-size: 0.84rem;
+    }
+
+    .company-job-page .company-job-skills-list {
+        max-height: 108px;
+    }
+
+    .company-job-page .onboarding-input,
+    .company-job-page .btn-primary,
+    .company-job-page .btn-outline-secondary,
+    .company-job-page .glass-select-trigger {
+        min-height: 40px;
+        font-size: 0.93rem;
+    }
+
+    .company-job-page textarea.onboarding-input {
+        min-height: 40px !important;
+        height: 40px !important;
+    }
+
+    .company-job-page .company-job-form .mb-3 {
+        margin-bottom: 0.56rem !important;
+    }
+
+    .company-job-page .company-job-form .mb-4,
+    .company-job-page .step-actions.mt-4 {
+        margin-top: 0.56rem !important;
+        margin-bottom: 0.56rem !important;
+    }
+
+    .company-job-page .company-job-actions {
+        gap: 0.62rem;
+    }
+
+    .company-job-page .company-job-actions .step-btn {
+        min-width: 162px;
+    }
+
+    .company-job-page .company-toggle-pill {
+        padding: 0.22rem 0.54rem;
+        font-size: 0.84rem;
+    }
+
+    .company-job-page .company-job-summary-card {
+        padding: 0.58rem 0.7rem;
+    }
+}

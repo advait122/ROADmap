@@ -1,30 +1,46 @@
 {% extends "base.html" %}
 {% block title %}Create Job | CodeMap{% endblock %}
-{% block body_class %}onboarding-page company-page{% endblock %}
+{% block body_class %}onboarding-page company-page company-auth-page company-job-page company-job-step1-page{% endblock %}
 {% block page_styles %}
 <link href="/static/css/onboarding.css?v={{ asset_version }}" rel="stylesheet">
 <link href="/static/css/company.css?v={{ asset_version }}" rel="stylesheet">
 {% endblock %}
 {% block content %}
-<section class="setup-shell">
-    <div class="setup-card">
-        <div class="setup-left">
-            <div class="art-layer"></div>
-            <div class="setup-copy">
-                <h3>Create Job</h3>
-                <p>Step 1 of 2: add role requirements and key skill filters.</p>
+<section class="setup-shell company-job-shell">
+    <div class="setup-card setup-card-modern company-job-layout">
+        <div class="setup-left setup-left-showcase company-showcase company-job-showcase">
+            <div class="showcase-brand codemap-wordmark">CodeMap</div>
+
+            <div class="job-flow" aria-hidden="true">
+                <article class="job-flow-row is-active">
+                    <span class="job-flow-point">1</span>
+                    <div class="job-flow-card">
+                        <strong>Role Requirements</strong>
+                        <span>Skills, description, backlog policy</span>
+                    </div>
+                </article>
+                <article class="job-flow-row">
+                    <span class="job-flow-point">2</span>
+                    <div class="job-flow-card">
+                        <strong>Finalize Criteria</strong>
+                        <span>CGPA, shortlist count, deadline</span>
+                    </div>
+                </article>
+            </div>
+
+            <div class="setup-copy setup-copy-showcase">
+                <h3>Create smarter roles,</h3>
+                <h3>hire with confidence.</h3>
+                <p>Define clear skill signals and shortlist-ready filters in two steps.</p>
             </div>
         </div>
 
-        <div class="setup-right">
-            <div class="company-header-row">
-                <div>
-                    <h2 class="setup-title">Company Job Setup</h2>
-                    <p class="setup-subtitle mb-0">Logged in as <strong>{{ company.username }}</strong></p>
-                </div>
-            </div>
+        <div class="setup-right setup-right-modern company-job-right">
+            <p class="company-auth-kicker">Company Job Setup</p>
+            <h2 class="setup-title">Role Requirements</h2>
+            <p class="setup-subtitle">Step 1 of 2: add required skills and eligibility filters.</p>
 
-            <div class="step-tracker mt-3">
+            <div class="step-tracker company-job-tracker mb-3">
                 <span class="tracker-dot active"></span>
                 <span class="tracker-dot"></span>
             </div>
@@ -33,9 +49,9 @@
                 <div class="alert alert-danger mb-3">{{ error }}</div>
             {% endif %}
 
-            <form method="post" action="/company/job/create/step1">
+            <form method="post" action="/company/job/create/step1" class="company-job-form">
                 <label class="form-label">Required Skills</label>
-                <div class="skill-bubbles mb-3">
+                <div class="skill-bubbles mb-3 company-job-skills-list">
                     {% set draft_required = draft.required_skills if draft and draft.required_skills else [] %}
                     {% for skill in predefined_skills %}
                         <div class="skill-option">
@@ -88,7 +104,7 @@
                     </div>
                 </div>
 
-                <div class="step-actions">
+                <div class="step-actions company-job-actions">
                     <a href="/company/dashboard" class="btn btn-outline-secondary step-btn">Go to Dashboard</a>
                     <button type="submit" class="btn btn-primary step-btn">Continue</button>
                 </div>
