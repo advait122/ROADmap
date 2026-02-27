@@ -256,6 +256,13 @@
                         <button type="submit" class="company-topbar-logout-btn">Logout</button>
                     </form>
                 </div>
+            {% elif request.url.path in ["/company/auth", "/company/signup"] %}
+                <div class="ribbon-nav" aria-hidden="true"></div>
+                <div class="topbar-actions">
+                    <a id="ribbonStudentBtn" href="/onboarding" class="ribbon-company-link">
+                        Login as Student
+                    </a>
+                </div>
             {% elif request.url.path == "/onboarding" %}
                 <div class="ribbon-nav" aria-hidden="true"></div>
                 <div class="topbar-actions">
@@ -641,6 +648,7 @@
                 window.sessionStorage.removeItem("keepDoubtbotOpen");
             }
         })();
+
     </script>
 </body>
 </html>
