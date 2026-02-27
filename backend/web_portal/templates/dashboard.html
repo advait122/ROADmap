@@ -102,7 +102,7 @@
         </article>
 
         <article class="page-card roadmap-panel-card">
-            <h3 class="roadmap-panel-ribbon">Required Skills (LLM + Opportunity)</h3>
+            <h3 class="roadmap-panel-ribbon">Required Skills</h3>
             {% if dashboard.required_skills %}
                 <div class="roadmap-chip-list">
                     {% for skill in dashboard.required_skills %}
@@ -202,6 +202,7 @@
     {% elif dashboard.upcoming_tasks %}
         <div id="tasksTimeline" class="tasks-timeline">
             <div class="tasks-timeline-track">
+                <svg class="tasks-zigzag-path" data-task-zigzag aria-hidden="true"></svg>
                 {% set open_state = namespace(default_open_done=False) %}
                 {% for task in dashboard.upcoming_tasks %}
                     {% set date_parts = (task.task_date | string).split('-') %}
@@ -242,15 +243,52 @@
                         {% set open_state.default_open_done = true %}
                     {% endif %}
 
-                    <article class="task-node{% if open_default %} is-open{% endif %}" data-task-node data-task-id="{{ task.id }}">
+                    {% set side_class = "is-left" if loop.index0 % 2 == 0 else "is-right" %}
+                    {% set watch_token = (details.watch.split(' ')[0] if details.watch else '') %}
+                    {% set watch_start = 0 %}
+                    {% set watch_end = 0 %}
+                    {% if watch_token %}
+                        {% if '-' in watch_token %}
+                            {% set watch_parts = watch_token.split('-') %}
+                            {% if watch_parts | length == 2 %}
+                                {% set watch_start = watch_parts[0] | int %}
+                                {% set watch_end = watch_parts[1] | int %}
+                            {% endif %}
+                        {% else %}
+                            {% set watch_start = watch_token | int %}
+                            {% set watch_end = watch_start %}
+                        {% endif %}
+                    {% endif %}
+                    {% set has_video_range = watch_start > 0 and watch_end >= watch_start %}
+                    {% set video_count = (watch_end - watch_start + 1) if has_video_range else (1 if details.watch else 0) %}
+
+                    <article class="task-node {{ side_class }}{% if open_default %} is-open{% endif %}" data-task-node data-task-id="{{ task.id }}">
+                        <div class="task-node-rail">
+                            <span class="task-node-date">{{ date_label }}</span>
+                            <button
+                                type="button"
+                                class="task-step-point{% if open_default %} is-active{% endif %}{% if task.is_completed == 1 %} is-done{% endif %}"
+                                data-task-toggle
+                                data-task-point
+                                aria-expanded="{{ 'true' if open_default else 'false' }}"
+                                aria-controls="task-card-{{ task.id }}"
+                            >
+                                <span class="task-step-number">{{ loop.index }}</span>
+                            </button>
+                        </div>
+
                         <button
                             type="button"
-                            class="task-date-rect{% if open_default %} is-active{% endif %}{% if task.is_completed == 1 %} is-done{% endif %}"
+                            class="task-step-card{% if open_default %} is-active{% endif %}"
                             data-task-toggle
                             aria-expanded="{{ 'true' if open_default else 'false' }}"
                             aria-controls="task-card-{{ task.id }}"
                         >
-                            {{ date_label }}
+                            <div class="task-step-card-ribbon">{{ task.title }}</div>
+                            <p class="task-step-meta">
+                                <span>{{ details.playlist if details.playlist else (active_goal_skill.skill_name if active_goal_skill else "Task") }}</span>
+                                <span>{{ task.target_minutes }} min</span>
+                            </p>
                         </button>
 
                         <section
@@ -260,34 +298,83 @@
                             {% if not open_default %}hidden{% endif %}
                         >
                             <header class="task-detail-header">
-                                <h4 class="task-detail-title mb-0">{{ task.title }}</h4>
+                                <div class="task-detail-headline">
+                                    <div class="task-detail-head-main">
+                                        <span class="task-detail-head-label">Current Task</span>
+                                        <h4 class="task-detail-title mb-0">{{ task.title }}</h4>
+                                    </div>
+                                    <div class="task-detail-head-side">
+                                        <span class="task-detail-date-pill">{{ date_label }}</span>
+                                        {% if details.url %}
+                                            <a href="{{ details.url }}" target="_blank" rel="noreferrer" class="task-watch-tile">
+                                                <span class="task-watch-icon" aria-hidden="true"></span>
+                                                Watch
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
                             </header>
 
                             <div class="task-detail-body">
-                                <div class="task-detail-topline">
-                                    <span class="task-detail-target"><strong>TARGET:</strong> {{ task.target_minutes }} min</span>
+                                <div class="task-detail-summary-grid">
+                                    <article class="task-detail-summary-card">
+                                        <span class="task-detail-summary-label">Skill</span>
+                                        <span class="task-detail-summary-value">{{ active_goal_skill.skill_name if active_goal_skill else "Learning Task" }}</span>
+                                    </article>
+                                    <article class="task-detail-summary-card">
+                                        <span class="task-detail-summary-label">Target</span>
+                                        <span class="task-detail-summary-value">{{ task.target_minutes }} min</span>
+                                    </article>
                                 </div>
 
-                                {% if details.watch %}
+                                <section class="task-detail-block">
+                                    <h5 class="task-detail-block-title">Task Details</h5>
+
+                                    {% if details.playlist %}
+                                        <p class="task-detail-row">
+                                            <span class="task-detail-key">PLAYLIST:</span>
+                                            <span class="task-detail-value">{{ details.playlist }}</span>
+                                        </p>
+                                    {% endif %}
+
+                                    {% if details.channel %}
+                                        <p class="task-detail-row">
+                                            <span class="task-detail-key">CHANNEL:</span>
+                                            <span class="task-detail-value">{{ details.channel }}</span>
+                                        </p>
+                                    {% endif %}
+
                                     <p class="task-detail-row">
                                         <span class="task-detail-key">WATCH VIDEOS:</span>
-                                        <span class="task-detail-value">{{ details.watch }}</span>
+                                        <span class="task-detail-value">{{ details.watch if details.watch else "Follow current playlist section" }}</span>
                                     </p>
-                                {% endif %}
+                                </section>
 
-                                {% if details.playlist %}
-                                    <p class="task-detail-row">
-                                        <span class="task-detail-key">PLAYLIST:</span>
-                                        <span class="task-detail-value">{{ details.playlist }}</span>
-                                    </p>
-                                {% endif %}
-
-                                {% if details.channel %}
-                                    <p class="task-detail-row">
-                                        <span class="task-detail-key">CHANNEL:</span>
-                                        <span class="task-detail-value">{{ details.channel }}</span>
-                                    </p>
-                                {% endif %}
+                                <section class="task-detail-block">
+                                    <div class="task-detail-block-head">
+                                        <h5 class="task-detail-block-title mb-0">Videos</h5>
+                                        <span class="task-detail-block-count">{{ video_count }} item{% if video_count != 1 %}s{% endif %}</span>
+                                    </div>
+                                    <ul class="task-video-list">
+                                        {% if has_video_range %}
+                                            {% for video_no in range(watch_start, watch_end + 1) %}
+                                                <li class="task-video-item">
+                                                    <span class="task-video-index">{{ loop.index }}</span>
+                                                    <span class="task-video-title">Video {{ video_no }}</span>
+                                                </li>
+                                            {% endfor %}
+                                        {% elif details.watch %}
+                                            <li class="task-video-item">
+                                                <span class="task-video-index">1</span>
+                                                <span class="task-video-title">{{ details.watch }}</span>
+                                            </li>
+                                        {% else %}
+                                            <li class="task-video-item is-empty">
+                                                <span class="task-video-title">Video breakdown not available for this task.</span>
+                                            </li>
+                                        {% endif %}
+                                    </ul>
+                                </section>
 
                                 {% if details.extras %}
                                     {% for line in details.extras %}
@@ -295,19 +382,7 @@
                                     {% endfor %}
                                 {% endif %}
 
-                                {% if not details.watch and not details.playlist and not details.channel and not details.extras %}
-                                    <p class="task-detail-line">No details are available for this task.</p>
-                                {% endif %}
-
                                 <div class="task-detail-actions">
-                                    {% if details.url %}
-                                        <a href="{{ details.url }}" target="_blank" rel="noreferrer" class="btn btn-sm replan-btn task-playlist-btn">
-                                            Open Playlist
-                                        </a>
-                                    {% else %}
-                                        <span></span>
-                                    {% endif %}
-
                                     <form
                                         method="post"
                                         action="/students/{{ student.id }}/tasks/{{ task.id }}/completion?section=tasks"
@@ -325,6 +400,7 @@
                     </article>
                 {% endfor %}
             </div>
+            <aside class="tasks-detail-strip" data-task-detail-host></aside>
         </div>
     {% else %}
         <p class="text-muted mb-0">No tasks in current window.</p>
@@ -337,90 +413,105 @@
         const activeKey = "tasksTimeline.activeTaskId";
         const timeline = document.getElementById("tasksTimeline");
         if (!timeline) return;
+        const detailHost = timeline.querySelector("[data-task-detail-host]");
+        const track = timeline.querySelector(".tasks-timeline-track");
+        const zigzagSvg = timeline.querySelector("[data-task-zigzag]");
 
         const entries = Array.from(timeline.querySelectorAll("[data-task-node]")).map((node) => {
             return {
                 taskId: node.getAttribute("data-task-id"),
                 node,
-                toggle: node.querySelector("[data-task-toggle]"),
+                toggles: Array.from(node.querySelectorAll("[data-task-toggle]")),
+                point: node.querySelector(".task-step-point"),
                 panel: node.querySelector("[data-task-panel]"),
                 form: node.querySelector("[data-task-complete-form]"),
             };
-        }).filter((item) => item.toggle && item.panel && item.taskId);
+        }).filter((item) => item.toggles.length && item.panel && item.taskId);
 
         if (!entries.length) return;
 
-        function syncOrigin(item) {
-            const { toggle, panel } = item;
-            const panelRect = panel.getBoundingClientRect();
-            const toggleRect = toggle.getBoundingClientRect();
-            if (!panelRect.width || !panelRect.height || !toggleRect.width || !toggleRect.height) return;
-            const originX = toggleRect.left + (toggleRect.width / 2) - panelRect.left;
-            const originY = toggleRect.top + (toggleRect.height / 2) - panelRect.top;
-            panel.style.setProperty("--task-origin-x", `${originX}px`);
-            panel.style.setProperty("--task-origin-y", `${originY}px`);
-        }
-
-        function syncAllOrigins() {
-            entries.forEach(syncOrigin);
-        }
-
-        function openEntry(item) {
-            const { node, toggle, panel } = item;
-            panel.hidden = false;
-            panel.classList.remove("closing");
-            syncOrigin(item);
-            window.requestAnimationFrame(() => {
-                syncOrigin(item);
-                void panel.offsetWidth;
-                panel.classList.add("is-visible");
-                node.classList.add("is-open");
-                toggle.classList.add("is-active");
-                toggle.setAttribute("aria-expanded", "true");
-                window.sessionStorage.setItem(activeKey, item.taskId);
+        if (detailHost) {
+            entries.forEach((item) => {
+                detailHost.appendChild(item.panel);
             });
         }
 
-        function closeEntry(item) {
-            return new Promise((resolve) => {
-                const { node, toggle, panel } = item;
-                if (panel.hidden || panel.classList.contains("closing")) {
-                    resolve();
-                    return;
-                }
+        function drawZigzagPath() {
+            if (!track || !zigzagSvg) return;
+            if (entries.length < 2) {
+                zigzagSvg.innerHTML = "";
+                return;
+            }
 
-                panel.classList.remove("is-visible");
-                panel.classList.add("closing");
-                node.classList.remove("is-open");
-                toggle.classList.remove("is-active");
-                toggle.setAttribute("aria-expanded", "false");
+            const trackRect = track.getBoundingClientRect();
+            const width = Math.max(trackRect.width, 1);
+            const height = Math.max(track.scrollHeight, 1);
+            zigzagSvg.setAttribute("width", `${width}`);
+            zigzagSvg.setAttribute("height", `${height}`);
+            zigzagSvg.setAttribute("viewBox", `0 0 ${width} ${height}`);
+            zigzagSvg.innerHTML = "";
 
-                panel.addEventListener(
-                    "animationend",
-                    (event) => {
-                        if (event.animationName !== "task-detail-panel-close") return;
-                        panel.hidden = true;
-                        panel.classList.remove("closing");
-                        resolve();
-                    },
-                    { once: true },
+            const points = entries
+                .map((entry) => {
+                    const pointNode = entry.point;
+                    if (!pointNode) return null;
+                    const rect = pointNode.getBoundingClientRect();
+                    return {
+                        x: rect.left + rect.width / 2 - trackRect.left,
+                        y: rect.top + rect.height / 2 - trackRect.top,
+                    };
+                })
+                .filter(Boolean);
+
+            for (let idx = 0; idx < points.length - 1; idx += 1) {
+                const start = points[idx];
+                const end = points[idx + 1];
+                const deltaX = end.x - start.x;
+                const deltaY = end.y - start.y;
+
+                const cp1x = start.x + deltaX * 0.68;
+                const cp1y = start.y + deltaY * 0.2;
+                const cp2x = end.x - deltaX * 0.68;
+                const cp2y = start.y + deltaY * 0.8;
+
+                const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+                path.setAttribute(
+                    "d",
+                    `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${end.x.toFixed(2)} ${end.y.toFixed(2)}`,
                 );
-            });
+                path.setAttribute("class", "tasks-zigzag-segment");
+                zigzagSvg.appendChild(path);
+            }
         }
 
-        function setActiveInstant(item) {
-            entries.forEach((entry) => {
-                const isTarget = entry === item;
-                entry.panel.classList.remove("closing");
-                entry.panel.classList.toggle("is-visible", isTarget);
-                entry.panel.hidden = !isTarget;
-                entry.node.classList.toggle("is-open", isTarget);
-                entry.toggle.classList.toggle("is-active", isTarget);
-                entry.toggle.setAttribute("aria-expanded", isTarget ? "true" : "false");
+        function alignDetailHost(item) {
+            if (!detailHost || !track || !item?.point) return;
+            if (window.matchMedia("(max-width: 991px)").matches) {
+                detailHost.style.marginTop = "0px";
+                return;
+            }
+
+            const trackRect = track.getBoundingClientRect();
+            const pointRect = item.point.getBoundingClientRect();
+            const offset = Math.max(pointRect.top - trackRect.top - 34, 0);
+            detailHost.style.marginTop = `${offset}px`;
+        }
+
+        function setEntryState(item, isOpen) {
+            item.node.classList.toggle("is-open", isOpen);
+            item.toggles.forEach((toggle) => {
+                toggle.classList.toggle("is-active", isOpen);
+                toggle.setAttribute("aria-expanded", isOpen ? "true" : "false");
             });
+            item.panel.hidden = !isOpen;
+            item.panel.classList.toggle("is-visible", isOpen);
+        }
+
+        function activate(item) {
+            entries.forEach((entry) => setEntryState(entry, entry === item));
             if (item) {
-                syncOrigin(item);
                 window.sessionStorage.setItem(activeKey, item.taskId);
+                alignDetailHost(item);
             }
         }
 
@@ -431,17 +522,16 @@
             entries[0];
 
         if (activeEntry) {
-            setActiveInstant(activeEntry);
+            activate(activeEntry);
         }
 
         entries.forEach((item) => {
-            item.toggle.addEventListener("click", async () => {
-                if (item === activeEntry && item.panel.classList.contains("is-visible")) return;
-                if (activeEntry && activeEntry !== item) {
-                    await closeEntry(activeEntry);
-                }
-                openEntry(item);
-                activeEntry = item;
+            item.toggles.forEach((toggle) => {
+                toggle.addEventListener("click", () => {
+                    if (item === activeEntry && item.panel.classList.contains("is-visible")) return;
+                    activate(item);
+                    activeEntry = item;
+                });
             });
 
             item.form?.addEventListener("submit", async (event) => {
@@ -455,7 +545,9 @@
 
                 const pendingValue = hiddenInput.value;
                 submitBtn.disabled = true;
-                item.toggle.disabled = true;
+                item.toggles.forEach((toggle) => {
+                    toggle.disabled = true;
+                });
 
                 try {
                     const response = await fetch(item.form.action, {
@@ -472,21 +564,33 @@
                     submitBtn.textContent = completedNow ? "Done" : "Mark Done";
                     submitBtn.classList.toggle("btn-success", completedNow);
                     submitBtn.classList.toggle("btn-outline-primary", !completedNow);
-                    item.toggle.classList.toggle("is-done", completedNow);
+                    item.point?.classList.toggle("is-done", completedNow);
                     window.sessionStorage.setItem(activeKey, item.taskId);
                 } catch (error) {
                     item.form.submit();
                     return;
                 } finally {
                     submitBtn.disabled = false;
-                    item.toggle.disabled = false;
+                    item.toggles.forEach((toggle) => {
+                        toggle.disabled = false;
+                    });
                 }
             });
         });
 
-        window.addEventListener("resize", syncAllOrigins);
-        window.addEventListener("load", syncAllOrigins);
-        syncAllOrigins();
+        let pathRaf = 0;
+        function requestPathDraw() {
+            if (pathRaf) window.cancelAnimationFrame(pathRaf);
+            pathRaf = window.requestAnimationFrame(() => {
+                drawZigzagPath();
+                if (activeEntry) alignDetailHost(activeEntry);
+                pathRaf = 0;
+            });
+        }
+
+        requestPathDraw();
+        window.addEventListener("resize", requestPathDraw);
+        window.addEventListener("load", requestPathDraw);
     })();
 </script>
 {% endif %}
